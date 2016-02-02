@@ -7,7 +7,7 @@ Javascript code and supporting content for KBase data api based widgets
 First, it would be good to get kbase-ui at [https://gitub.com/kbase/kbase-ui]() and ensure that you are set up and able to do the basic build and preview. In short,
 
 ```
-clone -b develop https://gitub.com/kbase/kbase-ui
+git clone -b develop https://github.com/kbase/kbase-ui
 cd kbase-ui
 make init
 make build
@@ -56,6 +56,12 @@ Install the plugin alongside kbase-ui
 ``` 
     
 This setup will allow the "classic" edit-build-refresh workflow to integrate the plugin. Since the data api landing page repo contains just data widgets, there is no need for further configuration of the ui.
+
+If you hop back into kbase-ui and issue ```make build``` the plugin will be operational.
+
+You can test this by visiting a dataview url which should invoke an appropriate object (see the data api demo menu item which provides links to inspect compatible objects -- the references can pasted into the dataview url.)
+
+For example, one available in CI now is: http://localhost:8080/#dataview/1779/1006539/1
 
 ### Faster Develop Workflow
 
