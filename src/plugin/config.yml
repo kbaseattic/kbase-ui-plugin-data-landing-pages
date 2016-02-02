@@ -27,7 +27,7 @@ install:
                 version: any
             icon: 
                 type: fontAwesome
-                classes: ['fa-lists']
+                classes: ['fa-list']
             viewers:
                 -
                     # if set true, this will be set as the default vis widget for this type.
