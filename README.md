@@ -73,4 +73,41 @@ ln -s `pwd`/kbase-ui-plugin-data-landing-pages/src/plugin kbase-ui/build/build/c
 
 ## Integrating into the Developer and Production Build
 
-[ coming soon ] 
+### Developer Build
+
+The configuration file you copied into kbase-ui/dev will not be commited in to the project. This protects the project integrity, but also does not add your plugin to the ui either. To incorporate it into the ui, you just need to add a stanza as before, but this time have it loaded from bower:
+
+- edit kbase-ui/config/ui/dev.yml
+- add the following stanza to the plugins section:
+
+```
+    -
+        name: data-landing-pages
+        globalName: kbase-ui-plugin-data-landing-pages
+        version: 0.1.0
+        cwd: src/plugin
+        source:
+            bower:
+                version: kbase/kbase-ui-plugin-data-landing-pages#master
+```
+
+Note that this does not require registration with bower, it is pulled straight from github.
+
+If you want the developer build to go against your personal account, because that is where rapid change is happening, then you may want to swap kbase/ with youraccount/. Note that this is a little dodgy since other developers may pick up work-in-progress pushes. To protect against that, make periodic semver tags and update and push up the developer config as need be:
+
+```
+    -
+        name: data-landing-pages
+        globalName: kbase-ui-plugin-data-landing-pages
+        version: 0.1.0
+        cwd: src/plugin
+        source:
+            bower:
+                version: you/kbase-ui-plugin-data-landing-pages#v0.1.0
+```
+
+Not here that the semver tag "v0.1.0" is the full tag string, and that a branch or tag may be used in the version property. Also note that whereas the github semver tag is prefixed with a "v", the version specification "0.1.0" operates with the bower registry, which expects a standard semver string.
+
+### Production Build
+
+[ coming soon ]
