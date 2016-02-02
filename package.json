@@ -1,0 +1,25 @@
+{
+  "name": "kbase-ui-plugin-data-landing-pages",
+  "version": "0.1.0",
+  "description": "Data widgets utilizing the new KBase Data API",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eapearson/kbase-ui-plugin-data-landing-pages.git"
+  },
+  "keywords": [
+    "kbase",
+    "ui",
+    "plugin",
+    "data"
+  ],
+  "author": "kbase",
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/eapearson/kbase-ui-plugin-data-landing-pages/issues"
+  },
+  "homepage": "https://github.com/eapearson/kbase-ui-plugin-data-landing-pages#readme"
+}
