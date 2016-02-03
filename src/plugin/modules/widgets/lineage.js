@@ -19,13 +19,16 @@ define([
             // VIEW
 
             function layout() {
-                return html.makePanel({
-                    title: 'Scientific Lineage',
-                    content: div([
-                        div({style: {fontWeight: 'bold', color: 'green'}, dataElement: 'scientificName'}, html.loading()),
-                        div({dataElement: 'lineage'}, html.loading())
-                    ])
-                });
+                return div([
+                    html.makePanel({
+                        title: 'Scientific Lineage',
+                        content: div([
+                            div({style: {fontWeight: 'bold', color: 'green'}, dataElement: 'scientificName'}, html.loading()),
+                            div({dataElement: 'lineage'}, html.loading())
+                        ])
+                    }), 
+                    html.makePanel({title: 'Dumb panel', content: '<p>Hello</p>'})
+                ]);
             }
 
             function renderScientificName(scientificName) {

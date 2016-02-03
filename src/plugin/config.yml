@@ -35,7 +35,7 @@ install:
                     default: true
                     # This the title for the widget if a wrapper panel is requested
                     title: 'Data View'
-                    panel: true
+                    panel: false
                     # This is the widget id name as specified in the plugin
                     # it should follow standard namespacing. It should also be 
                     # defined above in the modules.
