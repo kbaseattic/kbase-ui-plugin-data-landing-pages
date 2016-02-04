@@ -1,1 +1,6 @@
 /* Styles common to this plugin here */
+
+.kb-data-bold {
+    font-weight: 900;
+    color: #3c510c;
+}

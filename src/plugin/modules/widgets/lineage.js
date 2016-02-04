@@ -8,40 +8,62 @@ define([
     function (html, Taxon, utils) {
         'use strict';
 
+
         function factory(config) {
             var parent, container, runtime = config.runtime,
-                t = html.tag, ol = t('ol'),
+                t = html.tag, ol = t('ol'), ul = t('ul'),
                 li = t('li'),
                 a = t('a'),
                 div = t('div'),
-                pre = t('pre');
+                pre = t('pre'),
+                span = t('span'),
+                tbl = t('table'), td = t('td'), tr = t('tr'), t;
+
+            function unknown_html() {
+                return 'unknown';
+            }
 
             // VIEW
 
             function layout() {
-                return html.makePanel({
-                    title: 'Scientific Lineage',
-                    content: div([
-                        div({style: {fontWeight: 'bold', color: 'green'}, dataElement: 'scientificName'}, html.loading()),
-                        div({dataElement: 'lineage'}, html.loading())
-                    ])
-                });
+                return div([
+                    html.makePanel({
+                       title: 'Overview',
+                       content: tbl({class: 'table table-striped'},[
+                           tr([td('NCBI taxonomic ID'), td({dataElement: 'ncbi-id'}, html.loading())]),
+                           tr([td('Scientific name'), td({dataElement: 'scientific-name'}, html.loading())]),
+                           tr([td('Kingdom'), td({dataElement: 'kingdom'}, html.loading())])
+                       ])
+                    }),
+                    html.makePanel({
+                        title: 'Scientific Lineage',
+                        content: div([
+                            div({class: 'kb-data-bold', dataElement: 'scientific-lineage-name'}, html.loading()),
+                            div({dataElement: 'lineage'}, html.loading())
+                        ])
+                    })
+                ]);
             }
 
-            function renderScientificName(scientificName) {
-                container.querySelector('[data-element="scientificName"]').innerHTML = scientificName;
+            function setDataElementHTML(element, value) {
+                var elt = container.querySelector('[data-element="' + element + '"]');
+                if (elt === null) {
+                    elt.innerHTML =  unknown_html();
+                }
+                else {
+                    elt.innerHTML = value;
+                }
             }
 
             function renderLineage(lineage) {
-                var content = pre([
+                var list_o_links = pre([
                     ol(lineage.map(function (item, index) {
                         var url = 'http://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi?name=' + item.trim(' ');
                         return li({style: {paddingLeft: String(index * 10) + 'px'}}, [
                             a({href: url, target: '_blank'}, item.trim(' '))]);
                     }))
                 ]);
-
-                container.querySelector('[data-element="lineage"]').innerHTML = content;
+                setDataElementHTML('lineage', list_o_links);
             }
 
             // WIDGET API
@@ -68,11 +90,20 @@ define([
                 });
                 return taxon.scientific_name()
                     .then(function (scientificName) {
-                        renderScientificName(scientificName);
+                        setDataElementHTML('scientific-name', scientificName);
+                        setDataElementHTML('scientific-lineage-name', scientificName);
                         return taxon.scientific_lineage();
                     })
                     .then(function (lineage) {
                         renderLineage(lineage);
+                        return taxon.kingdom();
+                    })
+                    .then(function(kingdom) {
+                        setDataElementHTML('kingdom', kingdom);
+                        return taxon.taxonomic_id();
+                    })
+                    .then(function(taxid) {
+                        setDataElementHTML('ncbi-id', taxid);
                     });
             }
 
