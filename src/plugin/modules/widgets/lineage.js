@@ -128,7 +128,7 @@ define([
                                     ;
                                 }
                                 
-                                return;
+                                return null;
                             })
                         }
                         
