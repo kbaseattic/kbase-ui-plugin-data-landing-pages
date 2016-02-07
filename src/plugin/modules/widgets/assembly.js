@@ -45,7 +45,7 @@ define([
                 return div([
                     html.makePanel({
                         title: 'Overview',
-                        dataElement: "overview"
+                        content: div({dataElement: "overview"}, html.loading())
                     }, html.loading()),
                     html.makePanel({
                         title: 'Data Quality',
@@ -63,7 +63,7 @@ define([
                     i = 0,
                     len = keys.length,
                     data,
-                    data_div = container.querySelector('[data-element="contig-lengths-plot"]');
+                    data_div = container.querySelector('[data-element="contig_lengths_plot"]');
                 
                 keys.sort(function (a,b) {
                     if (String(a).split('.')[-1] < String(b).split('.')[-1]) {
