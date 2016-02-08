@@ -17,15 +17,7 @@ define([
             var parent,
                 container,
                 runtime = config.runtime,
-                t = html.tag,
-                ol = t('ol'),
-                li = t('li'),
-                a = t('a'),
-                div = t('div'),
-                pre = t('pre'),
-                table = t('table'),
-                tr = t('tr'),
-                td = t('td'),
+                div = html.tag('div'),
                 panelTemplates = {
                     overview: handlebars.compile("<div class='row'>"
                             + "    <div class='col-md-6'>"
@@ -74,8 +66,10 @@ define([
                             + "        <div id='featureTypesPlot'></div>"
                             + "    </div>"
                             + "</div>"),
-                    annotations: handlebars.compile("<div class='row'>Plots</div>"),
-                    quality: handlebars.compile("<div class='row'>Plots</div>")
+                    annotations: handlebars.compile("<div class='row'>"
+                                                  + "Plots</div>"),
+                    quality: handlebars.compile("<div class='row'>"
+                                              + "Plots</div>")
                 };
 
             // VIEW
@@ -85,20 +79,16 @@ define([
                     html.makePanel({
                         title: 'Overview',
                         content: div({dataElement: 'overview'}, html.loading())
-                    })
-                ]);
-                /*
+                    }),
                     html.makePanel({
                         title: 'Structural and Functional Annotations',
                         content: div({dataElement: 'annotationInfo'}, "")
                     }),
-                    
                     html.makePanel({
-                        title: 'Data Quality',
+                        title: 'Genome Annotation Quality',
                         content: div({dataElement: 'qualityInfo'}, "")
                     })
                 ]);
-                */
             }
 
             function renderFeatureTypeCounts(featureTypeCounts) {
@@ -262,6 +252,9 @@ define([
                         .then(function (gc) {
                             renderGC(gc);
                         });
+                    })
+                    .catch(function (err) {
+                       console.log(err); 
                     });
             }
 
