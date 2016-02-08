@@ -16,6 +16,7 @@
     "url": "git://github.com/kbase/kbase-ui-plugin-data-landing-pages"
   },
   "dependencies": {
+    "jquery": "^2.1.4",
     "bluebird": "^3.0.0",
     "bootstrap": "^3.3.0",
     "datatables": "^1.10.9",
