@@ -10,6 +10,9 @@ define([
     'handlebars',
     'plotly'
 ],
+
+# TODO: Fix line plots with contig index
+
     function (html, GenomeAnnotation, Taxon, Assembly, utils, numeral, handlebars, plotly) {
         'use strict';
 
