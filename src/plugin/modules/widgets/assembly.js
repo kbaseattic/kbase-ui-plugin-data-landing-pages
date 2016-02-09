@@ -44,8 +44,17 @@ define([
                     quality: "<div class='row'>"
                            + "    <div class='col-md-6'>"
                            + "        <div data-element='nx_plot'></div>"
+                           + "    </div>"
+                           + "    <div class='col-md-6'>"
                            + "        <div data-element='contig_lengths_hist'></div>"
+                           + "    </div>"
+                           + "</div>"
+                           + "<div class='row'>"
+                           + "    <div class='col-md-6'>"
                            + "        <div data-element='contig_gc_vs_length'></div>"
+                           + "    </div>"
+                           + "    <div class='col-md-6'>"
+                           + "        <div data-element='contig_gc_hist'></div>"
                            + "    </div>"
                            + "</div>",
                     annotations: "<div class='row'>"
@@ -72,8 +81,19 @@ define([
                 ]);
             }
 
-            function renderPlotContigLengths(contig_ids, lengths) {
-                var plot1 = {
+            function intcmp(a, b) { return (a < b) ? -1 : ((a > b) ? 1 : 0); }
+
+            function renderPlots(contig_ids, gc, lengths, nxlen) {
+                // Common settings
+                var marker_color = '#1C77B5',
+                    nx_keys = _.map(_.keys(nxlen), function(key) { return key * 1; });
+                nx_keys.sort(intcmp);
+                //console.debug('nx_keys=', nx_keys);
+                //console.debug('nxlen=', nxlen);
+
+                // All the plots in a list
+                var plots= [
+                    {
                         div: container.querySelector("div[data-element='contig_lengths_hist']"),
                         layout: {
                             title: '<b>Contig Length Distribution</b>',
@@ -84,10 +104,29 @@ define([
                         data: [{
                             x: Object.keys(lengths).map(function (id) { return lengths[id]; }),
                             type: 'histogram',
-                            marker: { color: 'rgb(28,110,38)' }                    
+                            marker: { line: {width: 1, color: 'rgb(255, 255,255)'} }
                         }]
                     },
-                    plot2 = {
+                    {
+                        div: container.querySelector("div[data-element='contig_gc_hist']"),
+                        layout: {
+                            title: '<b>Contig GC% Distribution</b>',
+                            fontsize: 24,
+                            xaxis: { title: '<b>Length (bp)</b>' },
+                            yaxis: { title: '<b>GC%</b>' }
+                        },
+                        data: [{
+                            x: _.values(gc),
+                            text: _.keys(gc),
+                            hoverinfo: 'x+text',
+                            type: 'histogram',
+                            marker: {
+                                line: {width: 1, color: 'rgb(255, 255,255)'},
+                                color: marker_color
+                            }
+                        }]
+                    },
+                    {
                         div: container.querySelector("div[data-element='contig_lengths_scatter']"),
                         layout: {
                             title: '<b>Contig Length</b>',
@@ -100,41 +139,86 @@ define([
                             x: contig_ids.map(function (id) { return contig_ids.indexOf(id); }),
                             type: 'scatter',
                             mode: 'lines',
-                            marker: { color: 'rgb(45,86,104)' }
+                            marker: { color: marker_color }
                         }]
-                    };
-                
-                plotly.newPlot(plot1.div, plot1.data, plot1.layout);
-                plotly.newPlot(plot2.div, plot2.data, plot2.layout);
-            }
-
-            
-            function renderPlotContigGC(contig_ids, gc) {                
-                var plot1 = {
-                    data: [{
-                        x: contig_ids.map(function (id) { return contig_ids.indexOf(id); }),
-                        y: contig_ids.map(function (id) { return gc[id] * 100.0; }),
-                        mode: 'lines',
-                        type: 'scatter',
-                        marker: {
-                            color: 'rgb(28,110,38)'
-                        }                    
-                    }],
-                    layout: {
-                        title: '<b>Contig GC Percentage</b>',
-                        fontsize: 24,
-                        xaxis: {
-                            title: '<b>Contig Index</b>'
-                        },
-                        yaxis: {
-                            zeroline: true,
-                            title: '<b>GC %</b>'
+                    },
+                    {
+                        div: container.querySelector("div[data-element='contig_gc_percent_scatter']"),
+                        data: [{
+                            x: contig_ids.map(function (id) { return contig_ids.indexOf(id); }),
+                            y: contig_ids.map(function (id) { return gc[id] * 100.0; }),
+                            mode: 'lines',
+                            type: 'scatter',
+                            marker: { color: marker_color }
+                        }],
+                        layout: {
+                            title: '<b>Contig GC%</b>',
+                            fontsize: 24,
+                            xaxis: {
+                                title: '<b>Contig Index</b>'
+                            },
+                            yaxis: {
+                                zeroline: true,
+                                title: '<b>GC %</b>'
+                            }
                         }
                     },
-                    div: container.querySelector("div[data-element='contig_gc_percent_scatter']")
-                };
-                
-                plotly.newPlot(plot1.div, plot1.data, plot1.layout);
+                    {
+                        div: container.querySelector("div[data-element='contig_gc_vs_length']"),
+                        layout: {
+                            title: '<b>GC by Contig Length</b>',
+                            fontsize: 24,
+                            xaxis: {title: '<b>Contig length (bp)</b>'},
+                            yaxis: {title: '<b>Contig GC%</b>'}
+                        },
+                        data: [{
+                            type: 'scatter',
+                            mode: 'markers',
+                            x: contig_ids.map(function (id) {
+                                return lengths[id];
+                            }),
+                            y: contig_ids.map(function (id) {
+                                return gc[id] * 100.0;
+                            }),
+                            marker: { color: marker_color }
+                        }]
+                    },
+                    {
+                        div: container.querySelector("div[data-element='nx_plot']"),
+                        layout: {
+                            title: '<b>N(x) Length</b>',
+                            fontsize: 24,
+                            xaxis: {
+                                title: '<b>Nx percentage</b>',
+                                tickmode: 'array',
+                                tickvals: _.range(0, 110, 10),
+//                                ticktext: _.map(_.range(0, 110, 10), function(x){ return '' + x }),
+                                showgrid: true
+                            },
+                            yaxis: {title: '<b>Length (bp)</b>'}
+                        },
+                        data: [{
+                                type: 'scatter',
+                                mode: 'lines',
+                                x: nx_keys,
+                                y: nx_keys.map(function(key){ return nxlen[key]; }),
+                                marker: { color: marker_color },
+                                showlegend: false,
+                                hoverinfo: 'x+y'
+                            },
+                            {
+                                type: 'scatter',
+                                mode: 'lines',
+                                x: [50, 50],
+                                y: [0, _.max(_.values(nxlen), intcmp)],
+                                line: { dash: 5, color: 'red' },
+                                showlegend: false
+                            }
+                        ],
+                    }
+                ];
+
+                _.each(plots, function(o) { plotly.newPlot(o.div, o.data, o.layout); });
             }
             
             function renderNumContigs(numContigs) {
@@ -178,6 +262,8 @@ define([
                 container.querySelector('div[data-element="quality"]').innerHTML = templates.quality;
                                 
                 var contig_ids,
+                    contig_lengths,
+                    contigs_gc,
                     assembly = Assembly.client({
                         url: runtime.getConfig('services.assembly_api.url'),
                         token: runtime.service('session').getAuthToken(),
@@ -206,11 +292,14 @@ define([
                         return assembly.contig_lengths();
                     })
                     .then(function (lengths) {
-                        renderPlotContigLengths(contig_ids, lengths);
+                        contig_lengths = lengths;
                         return assembly.contig_gc_content();
                     })
-                    .then(function (contigs_gc) {
-                        renderPlotContigGC(contig_ids, contigs_gc);
+                    .then(function (gc) {
+                        contigs_gc = gc;
+                        var contig_length_values = _.values(contig_lengths);
+                        var nx_values = utils.nx(contig_length_values, _.range(1,101,1));
+                        renderPlots(contig_ids, contigs_gc, contig_lengths, nx_values);
                     })
                     .catch(function (err) {
                         console.log(err);
