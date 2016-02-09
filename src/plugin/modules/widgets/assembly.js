@@ -32,30 +32,30 @@ define([
                         + "    </div>"
                         + "</div>"
                         + "<div class='row'>"
-                        + "    <div class='col-md-6'>"
+                        + "    <div class='col-md-5 col-md-offset-1'>"
                         + "        <div data-element='contig_gc_percent_scatter'></div>"
                         + "    </div>"
-                        + "    <div class='col-md-6'>"
+                        + "    <div class='col-md-5'>"
                         + "        <div data-element='contig_lengths_scatter'></div>"
                         + "    </div>"
                         + "</div>"
                         + "<div class='row'>"
                         + "</div>",
                     quality: "<div class='row'>"
-                           + "    <div class='col-md-6'>"
-                           + "        <div data-element='nx_plot'></div>"
-                           + "    </div>"
-                           + "    <div class='col-md-6'>"
+                            + "    <div class='col-md-5 col-md-offset-1'>"
+                            + "        <div data-element='contig_gc_hist'></div>"
+                            + "    </div>"
+                           + "    <div class='col-md-5'>"
                            + "        <div data-element='contig_lengths_hist'></div>"
                            + "    </div>"
                            + "</div>"
                            + "<div class='row'>"
-                           + "    <div class='col-md-6'>"
+                           + "    <div class='col-md-5 col-md-offset-1'>"
                            + "        <div data-element='contig_gc_vs_length'></div>"
                            + "    </div>"
-                           + "    <div class='col-md-6'>"
-                           + "        <div data-element='contig_gc_hist'></div>"
-                           + "    </div>"
+                           + "    <div class='col-md-5'>"
+                            + "        <div data-element='nx_plot'></div>"
+                            + "    </div>"
                            + "</div>",
                     annotations: "<div class='row'>"
                                + "    <div data-element='linked_annotations'></div>"
@@ -88,8 +88,6 @@ define([
                 var marker_color = '#1C77B5',
                     nx_keys = _.map(_.keys(nxlen), function(key) { return key * 1; });
                 nx_keys.sort(intcmp);
-                //console.debug('nx_keys=', nx_keys);
-                //console.debug('nxlen=', nxlen);
 
                 // All the plots in a list
                 var plots= [
@@ -112,11 +110,11 @@ define([
                         layout: {
                             title: '<b>Contig GC% Distribution</b>',
                             fontsize: 24,
-                            xaxis: { title: '<b>Length (bp)</b>' },
-                            yaxis: { title: '<b>GC%</b>' }
+                            xaxis: { title: '<b>GC%</b>' },
+                            yaxis: { title: '<b>Count</b>' }
                         },
                         data: [{
-                            x: _.values(gc),
+                            x: _.map(_.values(gc), function(g){ return g * 100.0 }),
                             text: _.keys(gc),
                             hoverinfo: 'x+text',
                             type: 'histogram',
@@ -139,7 +137,8 @@ define([
                             x: contig_ids.map(function (id) { return contig_ids.indexOf(id); }),
                             type: 'scatter',
                             mode: 'lines',
-                            marker: { color: marker_color }
+                            marker: { color: marker_color },
+                            hoverinfo: 'x+y'
                         }]
                     },
                     {
@@ -149,7 +148,8 @@ define([
                             y: contig_ids.map(function (id) { return gc[id] * 100.0; }),
                             mode: 'lines',
                             type: 'scatter',
-                            marker: { color: marker_color }
+                            marker: { color: marker_color },
+                            hoverinfo: 'x+y'
                         }],
                         layout: {
                             title: '<b>Contig GC%</b>',
@@ -168,18 +168,20 @@ define([
                         layout: {
                             title: '<b>GC by Contig Length</b>',
                             fontsize: 24,
-                            xaxis: {title: '<b>Contig length (bp)</b>'},
-                            yaxis: {title: '<b>Contig GC%</b>'}
+                            xaxis: {title: '<b>Contig GC%</b>'},
+                            yaxis: {title: '<b>Contig length (bp)</b>'}
                         },
                         data: [{
                             type: 'scatter',
                             mode: 'markers',
                             x: contig_ids.map(function (id) {
-                                return lengths[id];
-                            }),
-                            y: contig_ids.map(function (id) {
                                 return gc[id] * 100.0;
                             }),
+                            y: contig_ids.map(function (id) {
+                                return lengths[id];
+                            }),
+                            text: contig_ids,
+                            hoverinfo: 'all',
                             marker: { color: marker_color }
                         }]
                     },
