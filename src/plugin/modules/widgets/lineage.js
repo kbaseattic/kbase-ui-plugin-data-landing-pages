@@ -7,11 +7,13 @@ define([
     'kb/data/assembly',
     '../utils',
     'bluebird',
-    'jquery'
+    'jquery',
+    'underscore'
 ],
-    function (html, GenomeAnnotation, Taxon, Assembly, utils, bluebird, jquery) {
+    function (html, GenomeAnnotation, Taxon, Assembly, utils, bluebird, $, _) {
         'use strict';
 
+        //http://localhost:8080/#dataview/1779/1006539/1
         function factory(config) {
             var parent, container, runtime = config.runtime,
                 div = html.tag('div'),
@@ -69,7 +71,7 @@ define([
                     container.querySelector("[data-element='" + element + "']").innerHTML = value;
                 }
                 catch (err) {
-                    console.log("ERROR");
+                    console.error('while setting data element "' + element + '":', err);
                     throw err;
                 }
             }
@@ -118,7 +120,7 @@ define([
             }
 
             function renderWikipediaEntry(wikiInfo) {
-                if (wikiInfo.link === undefined) {
+                if (wikiInfo === null || wikiInfo.link === undefined) {
                     setDataElementHTML('wiki_url', "No Wikipedia entry found for this Taxon");
                 }
                 else {
@@ -128,8 +130,8 @@ define([
                                      + "'>Wikipedia entry for this Taxon</a>");
                 }
                                 
-                if (wikiInfo.extract === undefined) {
-                    setDataElementHTML('wikipedia_text', "<div>No wiki text found</div>");
+                if (wikiInfo === null || wikiInfo.extract === undefined) {
+                    setDataElementHTML('wikipedia_text', 'No text found');
                 }
                 else {
                     setDataElementHTML('wikipedia_text', wikiInfo.extract);
@@ -137,10 +139,30 @@ define([
             }
             
             function renderWikipediaImage(imageURL) {
-                console.log(imageURL);
-                setDataElementHTML('wikipedia_image', "<img class='media-object' src='" + imageURL + "'></img>");                
+                if (imageURL === null) {
+                    setDataElementHTML('wikipedia_image', 'No image found');
+                }
+                else {
+                    setDataElementHTML('wikipedia_image', "<img class='media-object' src='" + imageURL + "'></img>");
+                }
             }
-                        
+
+            /**
+             * Return copy of string with rightmost space-separated token removed.
+             *
+             * @param s
+             */
+            function removeLastToken(s) {
+                if (s == '') {
+                    return ''
+                }
+                var a = s.split(' ');
+                if (a.length <= 1) {
+                    return ''
+                }
+                return _.initial(a).join(' ');
+            }
+
             // WIDGET API
 
             function attach(node) {
@@ -168,74 +190,131 @@ define([
                     e.innerHTML = html.loading();
                 });
                 
-                function fetchWikipediaImageURL(name) {
-                    var wiki_api_url = "https://en.wikipedia.org/w/api.php?",
-                        query_params = "action=query&prop=pageimages|imageinfo"
-                                     + "&indexpageids&iiprop=url&pithumbsize=600w&titles=Image:";
-                    
-                    return bluebird.resolve(jquery.ajax({
-                        url: wiki_api_url + query_params + name + "&callback=?",
-                        data: { format: 'json' },
-                        dataType: 'jsonp'
-                    }))
-                    .then(function (data) {
-                        console.log(data);
-                        var pageid = data.query.pageids[0],
-                            url = data.query.pages[pageid].thumbnail.source;
-                        return url;
-                    })
-                    .catch(function (err) {
-                        console.log(err);
-                    });
-                }
-                
+                var wiki_api_url = "https://en.wikipedia.org/w/api.php?";
+
+                /**
+                 * Get text and image from wikipedia.
+                 *
+                 * Calls: fetchWikipediaData, fetchWikipediaImage
+                 *
+                 * @param name Scientific name
+                 * @returns {*}
+                 */
                 function fetchWikipediaEntry(name) {
-                    var wiki_api_url = "https://en.wikipedia.org/w/api.php?",
-                        query1_params = "action=query&list=search&format=json"
-                                      + "&srwhat=text&srsearch=",
-                        query2_params = "action=query&prop=extracts|pageimages|imageinfo|images|info|pageimages|pageprops"
-                                      + "&format=json&exlimit=1&exintro=&piprop=name"
-                                      + "&inprop=url&indexpageids=&titles=";
-                    
-                    return bluebird.resolve(jquery.ajax({
-                        url: wiki_api_url + query1_params + name + "&callback=?",
-                        data: { format: 'json' },
-                        dataType: 'jsonp'
-                    }))
-                    .then(function (data) {
-                        var title = data.query.search[0].title;
-                        
-                        return bluebird.resolve(jquery.ajax({
-                            url: wiki_api_url + query2_params + title + "&callback=?",
-                            data: { format: 'json' },
+                    //console.debug('fetchWikipediaEntry name="' + name + '"');
+                    return fetchWikipediaData(name)
+                        .then(function(data){
+                            return fetchWikipediaImage(data);
+                        })
+                        .catch(function (err) {
+                            console.error('while fetching wikipedia entry for "' + name + '":', err);
+                            return false;
+                        });
+                }
+
+                /**
+                 * Look for the organism in wikipedia, and fetch the JSON
+                 * version of the basic information.
+                 *
+                 * @param name
+                 * @returns {*}
+                 */
+                function fetchWikipediaData(name) {
+                    var query_params = "action=query&list=search&format=json"
+                            + "&srwhat=text&srsearch=",
+                        wiki_request_url = wiki_api_url + query_params + name; // "&callback=?";
+
+                    //console.debug('Call Wikipedia url="' + wiki_request_url + '"');
+
+                    return bluebird.resolve($.ajax({
+                            url: wiki_request_url,
+                            data: {format: 'json'},
                             dataType: 'jsonp'
-                        }));
-                    })
-                    .then(function (data) {
-                        console.log(data);
-                        var pageid = data.query.pageids[0],
-                            wikiInfo;
-                            
-                        try {
-                            wikiInfo = {
+                        }))
+                        .then(function (data) {
+                            // If nothing was found, try stripping the last token and
+                            // re-issuing the query.
+                            if (data.query.search.length == 0) {
+                                var name2 = removeLastToken(name);
+                                //console.debug('Stripped scientific name "' + name + '" down to "' + name2 + '"');
+                                if (name2 == '') {
+                                    throw new Error('No page found on Wikipedia for "' + name2 + '"');
+                                }
+                                data = fetchWikipediaData(name2);
+                            }
+                            return data;
+                        });
+                }
+
+                /**
+                 * Get wikipedia image info and add to the base wikipedia info.
+                 *
+                 * @param data Result object from fetchWikipediaData()
+                 * @returns {object} Object with properties 'extract', 'image', and 'link'
+                 */
+                function fetchWikipediaImage(data) {
+                    var query = data.query,
+                        title = query.search[0].title,
+                        query_params = "action=query&prop=extracts|pageimages|imageinfo|images|info|pageimages|pageprops"
+                            + "&format=json&exlimit=1&exintro=&piprop=name"
+                            + "&inprop=url&indexpageids=&titles=",
+                        wiki_request_url = wiki_api_url + query_params + title;
+
+                    return bluebird.resolve(
+                        $.ajax({
+                        url: wiki_request_url, // + "&callback=?",
+                        data: {format: 'json'},
+                        dataType: 'jsonp'
+                        }).then(function (data) {
+                            //console.debug('Images callback, data:', data);
+                            var pageid = data.query.pageids[0];
+                            return {
                                 extract: data.query.pages[pageid].extract,
                                 image: data.query.pages[pageid].pageimage,
                                 link: data.query.pages[pageid].fullurl
                             };
-                        }
-                        catch (err) {
-                            console.log(err);
-                            wikiInfo = { extract: undefined, image: undefined, link: undefined };
-                        }
-                            
-                        return wikiInfo;
-                    })
-                    .catch(function (err) {
-                        console.log(err);
+                        })
+                    ).catch (function(err) {
+                        console.error('while fetching wikipedia image at "' + wiki_request_url + '":', err);
+                        return {
+                            extract: undefined,
+                            image: undefined,
+                            link: undefined
+                        };
                     });
                 }
 
-                
+                /**
+                 * Get image data from Wikipedia
+                 *
+                 * @param name The canonical name for the page.
+                 * @returns {*}
+                 */
+                function fetchWikipediaImageURL(name) {
+                    if (name === undefined) {
+                        return null;
+                    }
+                    var query_params = "action=query&prop=pageimages|imageinfo"
+                            + "&indexpageids&iiprop=url&pithumbsize=600w&titles=Image:",
+                        wiki_request_url = wiki_api_url + query_params + name + "&callback=?";
+
+                    return bluebird.resolve($.ajax({
+                            url: wiki_request_url,
+                            data: { format: 'json' },
+                            dataType: 'jsonp'
+                        }))
+                        .then(function (data) {
+                            //console.debug("FetchWikipediaImage data:",data);
+                            var pageid = data.query.pageids[0];
+                            return data.query.pages[pageid].thumbnail.source;
+                        })
+                        .catch(function (err) {
+                            console.error('while fetching wikipedia image at "' + wiki_request_url + '":', err);
+                            return null;
+                        });
+                }
+
+
                 function getTaxonClient(ref) {
                     return Taxon.client({
                         url: runtime.getConfig('services.taxon_api.url'),
@@ -253,11 +332,23 @@ define([
                     })
                     .then(function (wiki_content) {
                         wikiInfo = wiki_content;
-                        renderWikipediaEntry(wikiInfo);
+                        if (wikiInfo === false) {
+                            //console.debug('No wikiInfo');
+                            renderWikipediaEntry(null);
+                            return false;
+                        }
+                        else {
+                            renderWikipediaEntry(wikiInfo);
+                        }
                         return fetchWikipediaImageURL(wikiInfo.image);
                     })
                     .then(function (wikiImage) {
-                        renderWikipediaImage(wikiImage);
+                        if (wikiImage === null) {
+                            renderWikipediaImage(null);
+                        }
+                        else {
+                            renderWikipediaImage(wikiImage);
+                        }
                         return taxon.scientific_lineage();
                     })
                     .then(function (lineage) {
@@ -315,7 +406,7 @@ define([
                         renderChildren(childrenInfo);
                     })
                     .catch(function (err) {
-                        console.log(err);
+                        console.error(err);
                     });
             }
 

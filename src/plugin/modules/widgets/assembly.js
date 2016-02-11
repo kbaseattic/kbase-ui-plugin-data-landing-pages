@@ -10,6 +10,7 @@ define([
     'handlebars',
     'plotly'
 ],
+
     function (html, GenomeAnnotation, Taxon, Assembly, utils, numeral, handlebars, plotly) {
         'use strict';
 
@@ -36,7 +37,8 @@ define([
                         + "        <div data-element='contig_gc_percent_scatter'></div>"
                         + "    </div>"
                         + "    <div class='col-md-5'>"
-                        + "        <div data-element='contig_lengths_scatter'></div>"
+                        //+ "        <div data-element='contig_lengths_scatter'></div>"
+                        + "        <div data-element='nx_plot'></div>"
                         + "    </div>"
                         + "</div>"
                         + "<div class='row'>"
@@ -54,7 +56,6 @@ define([
                            + "        <div data-element='contig_gc_vs_length'></div>"
                            + "    </div>"
                            + "    <div class='col-md-5'>"
-                            + "        <div data-element='nx_plot'></div>"
                             + "    </div>"
                            + "</div>",
                     annotations: "<div class='row'>"
@@ -86,9 +87,12 @@ define([
             function renderPlots(contig_ids, gc, lengths, nxlen) {
                 // Common settings
                 var marker_color = '#1C77B5',
-                    nx_keys = _.map(_.keys(nxlen), function(key) { return key * 1; });
+                    nx_keys = _.map(_.keys(nxlen), function(key) { return key * 1; }),
+                    length_pairs = _.pairs(lengths)
+                // sort Nx keys
                 nx_keys.sort(intcmp);
-
+                // Sort length_pairs by second element (the length)
+                length_pairs.sort(function(p1, p2) { return intcmp(p1[1], p2[1]); });
                 // All the plots in a list
                 var plots= [
                     {
@@ -124,29 +128,29 @@ define([
                             }
                         }]
                     },
-                    {
-                        div: container.querySelector("div[data-element='contig_lengths_scatter']"),
-                        layout: {
-                            title: '<b>Contig Length</b>',
-                            fontsize: 24,
-                            xaxis: {title: '<b>Contig Index</b>'},
-                            yaxis: {title: '<b>Length (bp)</b>'}
-                        },
-                        data: [{
-                            y: contig_ids.map(function (id) { return lengths[id]; }),
-                            x: contig_ids.map(function (id) { return contig_ids.indexOf(id); }),
-                            type: 'scatter',
-                            mode: 'lines',
-                            marker: { color: marker_color },
-                            hoverinfo: 'x+y'
-                        }]
-                    },
+                    //{
+                    //    div: container.querySelector("div[data-element='contig_lengths_scatter']"),
+                    //    layout: {
+                    //        title: '<b>Contig Length</b>',
+                    //        fontsize: 24,
+                    //        xaxis: {title: '<b>Contig Index</b>'},
+                    //        yaxis: {title: '<b>Length (bp)</b>'}
+                    //    },
+                    //    data: [{
+                    //        y: contig_ids.map(function (id) { return lengths[id]; }),
+                    //        x: contig_ids.map(function (id) { return contig_ids.indexOf(id); }),
+                    //        type: 'scatter',
+                    //        mode: 'lines',
+                    //        marker: { color: marker_color },
+                    //        hoverinfo: 'x+y'
+                    //    }]
+                    //},
                     {
                         div: container.querySelector("div[data-element='contig_gc_percent_scatter']"),
                         data: [{
-                            x: contig_ids.map(function (id) { return contig_ids.indexOf(id); }),
-                            y: contig_ids.map(function (id) { return gc[id] * 100.0; }),
-                            mode: 'lines',
+                            x: length_pairs.map(function (p) { return p[1]; }),
+                            y: length_pairs.map(function (p) { return gc[p[0]] * 100.0; }),
+                            mode: 'markers',
                             type: 'scatter',
                             marker: { color: marker_color },
                             hoverinfo: 'x+y'
@@ -155,11 +159,11 @@ define([
                             title: '<b>Contig GC%</b>',
                             fontsize: 24,
                             xaxis: {
-                                title: '<b>Contig Index</b>'
+                                title: '<b>Contig Length (bp)</b>'
                             },
                             yaxis: {
                                 zeroline: true,
-                                title: '<b>GC %</b>'
+                                title: '<b>Contig GC %</b>'
                             }
                         }
                     },
