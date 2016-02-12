@@ -67,9 +67,55 @@ define([
                             + "    </div>"
                             + "</div>"),
                     annotations: handlebars.compile("<div class='row'>"
-                                                  + "Plots</div>"),
+                                                  + "    <div class='col-md-2'>"
+                                                  + "        <input type='text' class='form-control' placeholder='feature type'/>"
+                                                  + "    </div>"
+                                                  + "    <div class='col-md-6'>"
+                                                  + "        <table class='table table-bordered table-striped'>"
+                                                  + "            <thead>"
+                                                  + "                <tr>"
+                                                  + "                    <th>type</th>"
+                                                  + "                    <th>id</th>"
+                                                  + "                    <th>length</th>"
+                                                  + "                    <th>function</th>"
+                                                  + "                    <th>locations</th>"
+                                                  + "                </tr>"
+                                                  + "            </thead>"
+                                                  + "            <tbody>"
+                                                  + "                {{#each featureData}}"
+                                                  + "                    <tr>"
+                                                  + "                        <td>{{feature_type}}</td>"
+                                                  + "                        <td>{{feature_id}}</td>"
+                                                  + "                        <td>{{feature_dna_sequence_length}}</td>"
+                                                  + "                        <td>{{feature_function}}</td>"
+                                                  + "                        <td>"
+                                                  + "                        <table class='table'>"
+                                                  + "                            <thead>"
+                                                  + "                                <td>contig_id</td>"
+                                                  + "                                <td>start</td>"
+                                                  + "                                <td>strand</td>"
+                                                  + "                                <td>length</td>"
+                                                  + "                            </thead>"
+                                                  + "                            <tbody>"
+                                                  + "                            {{#each feature_locations}}"
+                                                  + "                            <tr>"
+                                                  + "                                <td>{{contig_id}}</td>"
+                                                  + "                                <td>{{start}}</td>"
+                                                  + "                                <td>{{strand}}</td>"
+                                                  + "                                <td>{{length}}</td>"
+                                                  + "                            </tr>"
+                                                  + "                            {{/each}}"
+                                                  + "                            </tbody>"
+                                                  + "                        </table>"
+                                                  + "                        </td>"
+                                                  + "                    </tr>"
+                                                  + "                {{/each}}"
+                                                  + "            </tbody>"
+                                                  + "        </table>"
+                                                  + "    </div>"
+                                                  + "</div>"),
                     quality: handlebars.compile("<div class='row'>"
-                                              + "Plots</div>")
+                                              + "</div>")
                 };
 
             // VIEW
@@ -78,25 +124,23 @@ define([
                 return div([
                     html.makePanel({
                         title: 'Overview',
-                        content: div({dataElement: 'overview'}, html.loading())
+                        content: div({id: 'overview'}, panelTemplates.overview())
                     }),
                     html.makePanel({
                         title: 'Structural and Functional Annotations',
-                        content: div({dataElement: 'annotationInfo'}, "")
+                        content: div({id: 'annotationInfo'}, html.loading())
                     }),
                     html.makePanel({
                         title: 'Genome Annotation Quality',
-                        content: div({dataElement: 'qualityInfo'}, "")
+                        content: div({id: 'qualityInfo'}, "")
                     })
                 ]);
             }
 
-            function renderFeatureTypeCounts(featureTypeCounts) {
-                container.querySelector('[data-element="overview"]').innerHTML = panelTemplates.overview({
-                   featuretype: featureTypeCounts                                                               
-                });
+            function renderFeatureDataTable(data) {
+                container.querySelector("[id='annotationInfo']").innerHTML = panelTemplates.annotations({featureData: data});
             }
-                        
+                                    
             function renderFeatureTypesPlot(ftypes, fcounts) {                
                 var data = [{
                     type: 'bar',
@@ -180,10 +224,15 @@ define([
                  *   objectVersion
                  *   ...
                  */
-                var genomeAnnotation = GenomeAnnotation.client({
+                var numFeatures = 0,
+                    genomeAnnotation = GenomeAnnotation.client({
                     url: runtime.getConfig('services.genomeAnnotation_api.url'),
                     token: runtime.service('session').getAuthToken(),
                     ref: utils.getRef(params)
+                });
+                
+                Array.from(container.querySelectorAll("[data-element]")).forEach(function (e) {
+                    e.innerHTML = html.loading();
                 });
                 
                 return genomeAnnotation.feature_type_counts()
@@ -194,12 +243,25 @@ define([
                                 ftCounts[f] = numeral(featureTypes[f]).format('0,0');
                                 ftypes.push(f);
                                 fcounts.push(featureTypes[f]);
+                                numFeatures += featureTypes[f];
                             }
                         }
                         
-                        renderFeatureTypeCounts(ftCounts);
                         renderFeatureTypesPlot(ftypes,fcounts);
-                        return genomeAnnotation.taxon();
+                                                
+                        return genomeAnnotation.feature_ids({
+                            filters: {
+                                type_list: ftypes
+                            }
+                        })
+                        .then(function (feature_ids) {
+                            return genomeAnnotation.features(feature_ids.by_type[ftypes[0]].slice(0,10));
+                        })
+                        .then(function (feature_data) {
+                            console.log(feature_data);
+                            renderFeatureDataTable(feature_data);
+                            return genomeAnnotation.taxon();
+                        });
                     })
                     .then(function (taxon_ref) {
                         renderTaxonLink(taxon_ref);
@@ -210,7 +272,7 @@ define([
                             ref: taxon_ref
                         });
 
-                        taxon.taxonomic_id().then(function (taxId) {
+                        return taxon.taxonomic_id().then(function (taxId) {
                             renderTaxId(taxId);
                             return taxon.scientific_name();
                         })
@@ -228,9 +290,8 @@ define([
                         })
                         .then(function (aliases) {
                             renderAliases(aliases);
+                            return genomeAnnotation.assembly();
                         });
-                        
-                        return genomeAnnotation.assembly();
                     })
                     .then(function (assembly_ref) {
                         renderAssemblyLink(assembly_ref);
@@ -241,7 +302,7 @@ define([
                             ref: assembly_ref
                         });
                         
-                        assembly.number_contigs().then(function (numContigs) {
+                        return assembly.number_contigs().then(function (numContigs) {
                             renderNumberContigs(numContigs);
                             return assembly.dna_size();
                         })
