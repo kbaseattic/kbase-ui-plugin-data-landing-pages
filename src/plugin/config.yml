@@ -13,10 +13,8 @@ source:
 install:
     widgets:
         -
-            id: kb_dataApiWidgets_lineage
-            # NB: we will simplify this to just
-            # module: lineage very soon.
-            module: plugins/data-landing-pages/modules/widgets/lineage
+            id: kb_dataApiWidgets_taxon
+            module: plugins/data-landing-pages/modules/widgets/taxon
             type: factory
         -
             id: kb_dataApiWidgets_assembly
@@ -50,7 +48,7 @@ install:
                     # This is the registered widget id. The mapping of widget
                     # to module is probably made above.
                     widget: 
-                        name: kb_dataApiWidgets_lineage
+                        name: kb_dataApiWidgets_taxon
         -
             type: 
                 module: KBaseGenomeAnnotations
