@@ -77,6 +77,30 @@ install:
                         name: kb_dataApiWidgets_assembly
         -
             type: 
+                module: KBaseGenomes
+                name:   ContigSet
+                version: any
+            icon: 
+                type: fontAwesome
+                classes: ['fa-list']
+            viewers:
+                -
+                    # if set true, this will be set as the default vis widget for this type.
+                    # note that we do not have a way of selecting one from amongst multiple widgets
+                    default: true
+                    # This the title for the widget if a wrapper panel is requested
+                    title: 'Data View'
+                    panel: false
+                    # This is the widget id name as specified in the plugin
+                    # it should follow standard namespacing. It should also be 
+                    # defined above in the modules.
+                    # module: kb_widget_dataview_communities_collection
+                    # This is the registered widget id. The mapping of widget
+                    # to module is probably made above.
+                    widget: 
+                        name: kb_dataApiWidgets_assembly
+        -
+            type: 
                 module: KBaseGenomeAnnotations
                 name:   GenomeAnnotation
                 version: any
