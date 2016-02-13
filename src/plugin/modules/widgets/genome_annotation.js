@@ -66,9 +66,16 @@ define([
                             + "        <div id='featureTypesPlot'></div>"
                             + "    </div>"
                             + "</div>"),
+                    quality: handlebars.compile([
+                        "<div class='row'>",
+                        "  <div class='col-md-5 col-md-offset-1'>",
+                        "    <div id='annotationDensityScatter'></div>",
+                        "  </div>",
+                        "  <div class='col-md-5'>",
+                        "    <div id='annotationDensityDist'></div>",
+                        "  </div>",
+                        "</div>"].join('\n')),
                     annotations: handlebars.compile("<div class='row'>"
-                                                  + "Plots</div>"),
-                    quality: handlebars.compile("<div class='row'>"
                                               + "Plots</div>")
                 };
 
@@ -82,7 +89,7 @@ define([
                     }),
                     html.makePanel({
                         title: 'Structural and Functional Annotations',
-                        content: div({dataElement: 'annotationInfo'}, "")
+                        content: div({dataElement: 'annotationInfo'}, html.loading())
                     }),
                     html.makePanel({
                         title: 'Genome Annotation Quality',
@@ -122,7 +129,53 @@ define([
                 
                 plotly.newPlot('featureTypesPlot', data, plot_layout);
             }
-            
+
+            function renderAnnotationDensityPlots(scatter_id, hist_id, cids, densities, lengths) {
+                var data, layout;
+                var x_values = cids.map(function(k) {return lengths[k];}),
+                    y_values = cids.map(function(k) {return 1000. * densities[k];});
+
+                //console.debug("plot ids,x,y:", cids, x_values, y_values);
+
+                // Scatterplot
+                data = [{
+                    type: 'scatter',
+                    mode: 'markers',
+                    x: x_values,
+                    y: y_values,
+                    text: cids,
+                    hoverinfo: 'all'
+                }];
+                layout =  {
+                    title: '<b>Annotation Density vs. Contig Length</b>',
+                    fontsize: 24,
+                    xaxis: {title: 'Contig Length'},
+                    yaxis: {
+                        title: 'Annotation Density<br>(num. annotations per 1000bp)<br>&nbsp;',
+                        rangemode: 'tozero',
+                        zeroline: false
+                    },
+                    aspectratio: {x: 4, y: 3}
+                };
+                plotly.newPlot(scatter_id, data, layout);
+
+                // Histogram
+                data = [{
+                    type: 'histogram',
+                    x: y_values
+                }];
+                layout =  {
+                    title: '<b>Annotation Density Distribution</b>',
+                    fontsize: 24,
+                    yaxis: {title: 'Count'},
+                    xaxis: {
+                        title: 'Annotation Density<br>(num. annotations per 1000bp)',
+                    },
+                    aspectratio: {x: 4, y: 3}
+                };
+                plotly.newPlot(hist_id, data, layout);
+            }
+
             function renderAssemblyLink(ref) {
                 container.querySelector('[data-element="assemblyLink"]').innerHTML = "<a href='#dataview/" + ref + "'>Assembly</a>";
             }
@@ -162,7 +215,76 @@ define([
             function renderAliases(aliases) {
                 container.querySelector('[data-element="aliases"]').innerHTML = aliases;
             }
-            
+
+            function renderQualityInfo(genomeAnnotation) {
+                var assembly = null,
+                    contig_densities = {},
+                    contig_lengths = {},
+                    contig_ids = [];
+
+                container.querySelector('[data-element="qualityInfo"]').innerHTML =
+                    panelTemplates.quality();
+
+                // Get associated assembly, store in outer scope
+                genomeAnnotation.assembly()
+                    .then(function(asm_ref) {
+                        assembly = Assembly.client({
+                            url: runtime.getConfig('services.assembly_api.url'),
+                            token: runtime.service('session').getAuthToken(),
+                            ref: asm_ref
+                        });
+                        var filter = {}; // {'type_list': ['CDS']}
+                        return genomeAnnotation.feature_ids(filter, 'region');
+                    })
+                    // Get counts of features in each contig
+                    .then(function(fids) {
+                        var counts = {},
+                            regions = fids.by_region;
+                        var first = true;
+                        // Keys of the regions are contig identifiers, so
+                        // loop through each of these and add up ranges on each strand.
+                        _.each(_.keys(regions), function(contig_id) {
+                            if (first) {
+                                console.debug('region:', regions[contig_id]);
+                                first = false;
+                            }
+                            var num_features = _.keys(regions[contig_id]['+']).length +
+                                _.keys(regions[contig_id]['-'].length);
+                            //console.debug('feature contig_id=' + contig_id + " num_features=" + num_features);
+                            counts[contig_id] = num_features;
+                        });
+                        contig_ids = _.keys(regions);
+                        contig_ids.sort();
+                        return counts;
+                    })
+                    // Calculate densities for each contig
+                    // a. put counts in densities, get lengths for all contigs
+                    .then(function(counts) {
+                        contig_densities = counts;
+                        return assembly.contig_lengths(contig_ids);
+                    })
+                    // b. divide counts by length of each contig
+                    .then(function(lengths) {
+                        contig_lengths = lengths;
+                        //console.debug('contig lengths:', lengths);
+                        _.each(contig_ids, function(key) {
+                            var val = lengths[key];
+                            if (val == 0) {
+                                console.warn('Zero-length contig id=' + key);
+                                contig_densities[key] = 0;
+                            }
+                            else {
+                                contig_densities[key] /= 1. * val;
+                            }
+                        });
+                        //console.debug('contig densities:', contig_densities);
+                        return null;
+                    })
+                    .then(function() {
+                        renderAnnotationDensityPlots('annotationDensityScatter', 'annotationDensityDist',
+                            contig_ids, contig_densities, contig_lengths);
+                    })
+            }
             // WIDGET API
 
             function attach(node) {
@@ -188,6 +310,7 @@ define([
                 
                 return genomeAnnotation.feature_type_counts()
                     .then(function (featureTypes) {
+                        console.debug("Plot feature type counts");
                         var ftCounts = {}, ftypes = [], fcounts = [];
                         for(var f in featureTypes) {
                             if (featureTypes.hasOwnProperty(f)) {
@@ -252,6 +375,12 @@ define([
                         .then(function (gc) {
                             renderGC(gc);
                         });
+                        return null;
+                    })
+                    .then(function() {
+                        console.debug("Rendering genome quality plots");
+                        renderQualityInfo(genomeAnnotation);
+                        return null;
                     })
                     .catch(function (err) {
                        console.log(err); 
