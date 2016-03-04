@@ -232,17 +232,15 @@ define([
                 ]);
             }
             
-            function renderContigIds(ids) {
-                container.querySelector("[data-element='contig_ids']").innerHTML = handlebars.compile(
-                    "{{#each contigIds}}"
-                    + "<option value='{{this}}'>{{this}}</option>"
-                    + "{{/each}}")({contigIds: ids});
-            }
-
             function renderFilterPanel(types) {
                 container.querySelector("[id='filters_div']").innerHTML = panelTemplates.filters({
                     featureTypes: types
                 });
+
+                container.querySelector("[data-element='contig_ids']").innerHTML = handlebars.compile(
+                    "{{#each contigIds}}"
+                    + "<option value='{{this}}'>{{this}}</option>"
+                    + "{{/each}}")({contigIds: annotation_data.contig_ids});
             }
                         
             function renderFeatureDataTable(data) {
@@ -269,6 +267,10 @@ define([
                                     length: numeral(data[d].feature_locations[i].length).format('0,0')
                                 });
                             }
+                        }
+                        // TODO this is a hack for now, need to fix this in the API itself
+                        else if (item == 'feature_notes') {
+                            formattedData[d].feature_notes = data[d].feature_notes.join('');
                         }
                         else {
                             formattedData[d][item] = data[d][item];
@@ -333,7 +335,6 @@ define([
                 
                 //setup the filter events
                 $("#update_filters_button").click(function () {
-                    console.log('button clicked');
                     var selected_types = $("[data-element='feature_types'] option:checked").toArray().map(function (e) {
                             return e.value;
                         }),
@@ -344,10 +345,7 @@ define([
                         provided_functions = $("[data-element='function_strings']").val(),
                         provided_aliases = $("[data-element='alias_strings']").val(),
                         filters = {};
-                    
-                    console.log(provided_functions);
-                    console.log(provided_aliases);
-                    
+                                        
                     selected_contigs.forEach(function (cid) {                        
                         selected_regions.push(
                             {contig_id: cid, strand: '-', start: 1E9, length: 1E9},
@@ -382,9 +380,7 @@ define([
                             filters.alias_list = [provided_aliases];
                         }
                     }
-                    
-                    console.log(filters);
-                                        
+                                                            
                     genomeAnnotation.feature_ids(filters).then(function (feature_ids) {
                         var flattened_ids = [], subset;
                                                 
@@ -499,35 +495,7 @@ define([
                     e.innerHTML = html.loading();
                 });
                 
-                return genomeAnnotation.feature_type_counts()
-                    .then(function (featureTypes) {
-                        var ftCounts = {}, ftypes = [], fcounts = [];
-                        for(var f in featureTypes) {
-                            if (featureTypes.hasOwnProperty(f)) {
-                                ftCounts[f] = numeral(featureTypes[f]).format('0,0');
-                                ftypes.push(f);
-                                fcounts.push(featureTypes[f]);
-                                numFeatures += featureTypes[f];
-                            }
-                        }
-                        
-                        renderFeatureTypesPlot(ftypes,fcounts);
-                        renderFilterPanel(ftypes);
-                                                
-                        return genomeAnnotation.feature_ids({
-                            filters: {
-                                type_list: ftypes
-                            }
-                        })
-                        .then(function (feature_ids) {
-                            return genomeAnnotation.features(feature_ids.by_type[ftypes[0]].slice(0,1000));
-                        })
-                        .then(function (feature_data) {
-                            console.log(feature_data);
-                            renderFeatureDataTable(feature_data);
-                            return genomeAnnotation.taxon();
-                        });
-                    })
+                return genomeAnnotation.taxon()
                     .then(function (taxon_ref) {
                         renderTaxonLink(taxon_ref);
 
@@ -580,7 +548,34 @@ define([
                             return assembly.contig_ids();
                         })
                         .then(function (ids) {
-                            renderContigIds(ids);
+                            annotation_data.contig_ids = ids;
+                            return genomeAnnotation.feature_type_counts();
+                        });
+                    })
+                    .then(function (featureTypes) {
+                        var ftCounts = {}, ftypes = [], fcounts = [];
+                        for(var f in featureTypes) {
+                            if (featureTypes.hasOwnProperty(f)) {
+                                ftCounts[f] = numeral(featureTypes[f]).format('0,0');
+                                ftypes.push(f);
+                                fcounts.push(featureTypes[f]);
+                                numFeatures += featureTypes[f];
+                            }
+                        }
+                        
+                        renderFeatureTypesPlot(ftypes,fcounts);
+                        renderFilterPanel(ftypes);
+                                                
+                        return genomeAnnotation.feature_ids({
+                            filters: {
+                                type_list: ftypes
+                            }
+                        })
+                        .then(function (feature_ids) {
+                            return genomeAnnotation.features(feature_ids.by_type[ftypes[0]].slice(0,1000));
+                        })
+                        .then(function (feature_data) {
+                            renderFeatureDataTable(feature_data);
                         });
                     })
                     .catch(function (err) {
