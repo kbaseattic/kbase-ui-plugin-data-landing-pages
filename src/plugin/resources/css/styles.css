@@ -13,6 +13,10 @@
     border: 2px solid black;
 }
 
+.wordwrap { 
+   word-wrap: break-word;
+}
+
 /*
 .filters_form {
     background-color: #ccc;

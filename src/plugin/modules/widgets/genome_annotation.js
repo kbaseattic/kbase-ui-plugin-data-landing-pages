@@ -119,10 +119,11 @@ define([
                                               + "    </div>"),
                     annotations: handlebars.compile("<div class='row'>"
                                                   + "    <div class='col-md-12' id='filters_div'></div>"
-                                                  + "    <div class='col-md-12' id='feature_table_div'></div>"
+                                                  + "    <div class='col-md-12' data-element='feature_table_div'></div>"
                                                   + "</div>"),
                     features: handlebars.compile("<div class='col-md-6' id='feature_table_container'>"
                                                   + "        <h6>Limited to 1,000 results</h6>"
+                                                  + "        <div id='no_results' class='hidden alert alert-danger' role='alert'>No results found using the current set of filters.</div>"
                                                   + "        <table class='col-md-4 table table-bordered table-striped' id='features_table'>"
                                                   + "            <thead>"
                                                   + "                <tr>"
@@ -175,7 +176,7 @@ define([
                                                   + "            </div>"
                                                   + "            <div>"
                                                   + "                <strong>DNA Sequence</strong>"
-                                                  + "                <pre>{{feature_dna_sequence}}</pre>"
+                                                  + "                <div class='well wordwrap'>{{feature_dna_sequence}}</div>"
                                                   + "            </div>"
                                                   + "            <div>"
                                                   + "                <div><strong>Aliases</strong></div>"
@@ -207,7 +208,7 @@ define([
                                                   + "            </div>"
                                                   + "            <div>"
                                                   + "                <strong>Notes</strong>"
-                                                  + "                <pre>{{feature_notes}}</pre>"
+                                                  + "                <div class='well wordwrap'>{{feature_notes}}</div>"
                                                   + "            </div>"
                                                   + "        </div>"
                                                   + "    {{/each}}"                                                  
@@ -245,7 +246,7 @@ define([
                         
             function renderFeatureDataTable(data) {
                 var formattedData = {}, i, len;
-                
+                                
                 // format all numeric values
                 for (var d in data) {
                     formattedData[d] = {};
@@ -278,9 +279,17 @@ define([
                     }
                 }
                 
-                container.querySelector("[id='feature_table_div']").innerHTML = panelTemplates.features({
+                container.querySelector("[data-element='feature_table_div']").innerHTML = panelTemplates.features({
                     featureData: formattedData
                 });
+                
+                if (data === null) {
+                    $("#no_results").removeClass("hidden");
+                }
+                else {
+                    $("#no_results").addClass("hidden");    
+                }
+                
                 var table = $("#features_table").DataTable({lengthChange: false});
 
                 /*
@@ -353,7 +362,7 @@ define([
                         );
                     });
                                         
-                    container.querySelector("[id='feature_table_div']").innerHTML = html.loading();
+                    container.querySelector("[data-element='feature_table_div']").innerHTML = html.loading();
                     
                     if (selected_types.length > 0) {
                         filters.type_list = selected_types;
@@ -380,7 +389,7 @@ define([
                             filters.alias_list = [provided_aliases];
                         }
                     }
-                                                            
+                                                                               
                     genomeAnnotation.feature_ids(filters).then(function (feature_ids) {
                         var flattened_ids = [], subset;
                                                 
@@ -390,7 +399,12 @@ define([
                         
                         subset = flattened_ids.splice(0,1000);
                         
-                        return genomeAnnotation.features(subset);
+                        if (subset.length > 0) {
+                            return genomeAnnotation.features(subset);
+                        }
+                        else {
+                            return null;
+                        }
                     }).then(function (feature_data) {
                         return renderFeatureDataTable(feature_data);
                     });
@@ -422,7 +436,8 @@ define([
                     }
                 };
                 
-                plotly.newPlot('featureTypesPlot', data, plot_layout);
+                container.querySelector("[id='featureTypesPlot']").innerHTML = "";
+                plotly.newPlot("featureTypesPlot", data, plot_layout);
             }
             
             function renderAssemblyLink(ref) {
@@ -494,6 +509,8 @@ define([
                 Array.from(container.querySelectorAll("[data-element]")).forEach(function (e) {
                     e.innerHTML = html.loading();
                 });
+                
+                container.querySelector("[id='featureTypesPlot']").innerHTML = html.loading();
                 
                 return genomeAnnotation.taxon()
                     .then(function (taxon_ref) {
