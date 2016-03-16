@@ -271,7 +271,12 @@ define([
                         }
                         // TODO this is a hack for now, need to fix this in the API itself
                         else if (item == 'feature_notes') {
-                            formattedData[d].feature_notes = data[d].feature_notes.join('');
+                            if (data[d].feature_notes === null) {
+                                formattedData[d].feature_notes = '';
+                            }
+                            else {
+                                formattedData[d].feature_notes = data[d].feature_notes.join('');
+                            }
                         }
                         else {
                             formattedData[d][item] = data[d][item];
