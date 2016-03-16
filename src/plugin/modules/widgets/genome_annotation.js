@@ -121,10 +121,11 @@ define([
                                                   + "    <div class='col-md-12' id='filters_div'></div>"
                                                   + "    <div class='col-md-12' data-element='feature_table_div'></div>"
                                                   + "</div>"),
-                    features: handlebars.compile("<div class='col-md-6' id='feature_table_container'>"
+                    features: handlebars.compile("<div class='row'>"
+                                                  + "    <div class='col-md-8' id='feature_table_container'>"
                                                   + "        <h6>Limited to 1,000 results</h6>"
                                                   + "        <div id='no_results' class='hidden alert alert-danger' role='alert'>No results found using the current set of filters.</div>"
-                                                  + "        <table class='col-md-4 table table-bordered table-striped' id='features_table'>"
+                                                  + "        <table class='table table-bordered table-striped' id='features_table'>"
                                                   + "            <thead>"
                                                   + "                <tr>"
                                                   + "                    <th>type</th>"
@@ -147,7 +148,7 @@ define([
                                                   + "            </tbody>"
                                                   + "        </table>"
                                                   + "    </div>"
-                                                  + "    <div class='col-md-6' data-element='feature_view'>"
+                                                  + "    <div class='col-md-4' data-element='feature_view'>"
                                                   + "        {{#each featureData}}"
                                                   + "        <div class='hidden' data-element='{{feature_id}}'>"
                                                   + "            <h4>Feature view</h4>"
@@ -213,7 +214,8 @@ define([
                                                   + "        </div>"
                                                   + "    {{/each}}"                                                  
                                                   + "    </div>"
-                                                  + "</div>"),
+                                                  + "</div>"
+                                                  + "</div> <!-- row-->"),
                     quality: handlebars.compile("<div class='row'>"
                                               + "</div>")
                 };
@@ -271,7 +273,12 @@ define([
                         }
                         // TODO this is a hack for now, need to fix this in the API itself
                         else if (item == 'feature_notes') {
-                            formattedData[d].feature_notes = data[d].feature_notes.join('');
+                            if (data[d].feature_notes === null) {
+                                formattedData[d].feature_notes = '';
+                            }
+                            else {
+                                formattedData[d].feature_notes = data[d].feature_notes.join('');
+                            }
                         }
                         else {
                             formattedData[d][item] = data[d][item];
