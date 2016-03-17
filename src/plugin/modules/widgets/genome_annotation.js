@@ -177,7 +177,7 @@ define([
                                                   + "            </div>"
                                                   + "            <div>"
                                                   + "                <strong>DNA Sequence</strong>"
-                                                  + "                <div class='well wordwrap'>{{feature_dna_sequence}}</div>"
+                                                  + "                <div class='well wordwrap sequence'>{{feature_dna_sequence}}</div>"
                                                   + "            </div>"
                                                   + "            <div>"
                                                   + "                <div><strong>Aliases</strong></div>"
@@ -269,15 +269,6 @@ define([
                                     strand: data[d].feature_locations[i].strand,
                                     length: numeral(data[d].feature_locations[i].length).format('0,0')
                                 });
-                            }
-                        }
-                        // TODO this is a hack for now, need to fix this in the API itself
-                        else if (item == 'feature_notes') {
-                            if (data[d].feature_notes === null) {
-                                formattedData[d].feature_notes = '';
-                            }
-                            else {
-                                formattedData[d].feature_notes = data[d].feature_notes.join('');
                             }
                         }
                         else {
@@ -464,7 +455,12 @@ define([
             }
             
             function renderTaxonLink(ref) {
-                container.querySelector('[data-element="taxonLink"]').innerHTML = "<a href='#dataview/" + ref + "'>Taxon</a>";
+                if (ref === null) {
+                    container.querySelector('[data-element="taxonLink"]').innerHTML = "Taxon"
+                }
+                else {
+                    container.querySelector('[data-element="taxonLink"]').innerHTML = "<a href='#dataview/" + ref + "'>Taxon</a>";
+                }
             }
             
             function renderTaxId(taxId) {
@@ -521,7 +517,12 @@ define([
                 
                 return genomeAnnotation.taxon()
                     .then(function (taxon_ref) {
-                        renderTaxonLink(taxon_ref);
+                        if (utils.getRef(params) === taxon_ref) {
+                            renderTaxonLink(null);
+                        }
+                        else {
+                            renderTaxonLink(taxon_ref);
+                        }
 
                         var taxon = Taxon.client({
                             url: runtime.getConfig('services.taxon_api.url'),
@@ -577,7 +578,12 @@ define([
                         });
                     })
                     .then(function (featureTypes) {
-                        var ftCounts = {}, ftypes = [], fcounts = [];
+                        var ftCounts = {},
+                            ftypes = [],
+                            fcounts = [],
+                            default_ftypes = ['gene','mRNA','CDS'],
+                            initial_type = null;
+                        
                         for(var f in featureTypes) {
                             if (featureTypes.hasOwnProperty(f)) {
                                 ftCounts[f] = numeral(featureTypes[f]).format('0,0');
@@ -589,14 +595,25 @@ define([
                         
                         renderFeatureTypesPlot(ftypes,fcounts);
                         renderFilterPanel(ftypes);
-                                                
+                            
+                        for (var i in default_ftypes) {
+                            if ($.inArray(default_ftypes[i],ftypes) > -1) {
+                                initial_type = default_ftypes[i];
+                                break;
+                            }
+                        }
+                            
+                        if (initial_type === null) {
+                            initial_type = ftypes.sort()[0];
+                        }
+                        
                         return genomeAnnotation.feature_ids({
                             filters: {
-                                type_list: ftypes
+                                type_list: [initial_type]
                             }
                         })
                         .then(function (feature_ids) {
-                            return genomeAnnotation.features(feature_ids.by_type[ftypes[0]].slice(0,1000));
+                            return genomeAnnotation.features(feature_ids.by_type[initial_type].slice(0,1000));
                         })
                         .then(function (feature_data) {
                             renderFeatureDataTable(feature_data);

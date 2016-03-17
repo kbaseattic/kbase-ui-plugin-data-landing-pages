@@ -14,7 +14,15 @@
 }
 
 .wordwrap { 
-   word-wrap: break-word;
+    word-wrap: break-word;
+}
+
+.sequence {
+    font-family: "Courier New", Courier, monospace;
+}
+
+td {
+    word-wrap: break-word;
 }
 
 /*
