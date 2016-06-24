@@ -85,7 +85,7 @@ install:
                 -
                     # if set true, this will be set as the default vis widget for this type.
                     # note that we do not have a way of selecting one from amongst multiple widgets
-                    default: true
+                    default: false
                     # This the title for the widget if a wrapper panel is requested
                     title: 'Data View'
                     panel: false
@@ -131,9 +131,10 @@ install:
                 classes: ['fa-list']
             viewers:
                 -
+                    id: dataapi
                     # if set true, this will be set as the default vis widget for this type.
                     # note that we do not have a way of selecting one from amongst multiple widgets
-                    default: true
+                    default: false
                     # This the title for the widget if a wrapper panel is requested
                     title: 'Data View'
                     panel: false
