@@ -83,6 +83,11 @@ install:
                 classes: ['fa-list']
             viewers:
                 -
+                    # If set, the id may be used to invoke a viewer directly. Otherwise
+                    # only the default viewer will be available, and there is only one
+                    # of those at a time.
+                    # invoked like #dataview/ws/obj/ver?viewer=id
+                    id: dataapi
                     # if set true, this will be set as the default vis widget for this type.
                     # note that we do not have a way of selecting one from amongst multiple widgets
                     default: false
