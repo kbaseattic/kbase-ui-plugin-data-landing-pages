@@ -27,7 +27,7 @@
     "kbase-common-js": "^1.0.0",
     "kbase-ui-widget": "^1.0.0",
     "kbase-service-clients-js": "^1.0.0",
-    "kbase-data-api-client-js": "^1.0.2"
+    "kbase-data-api-client-js": "eapearson#develop"
   },
   "devDependencies": {},
   "ignore": [
