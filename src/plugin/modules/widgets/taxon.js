@@ -319,7 +319,8 @@ define([
                     return Taxon.client({
                         url: runtime.getConfig('services.taxon_api.url'),
                         token: runtime.service('session').getAuthToken(),
-                        ref: ref
+                        ref: ref,
+                        timeout: 900000
                     });
                 }
                 

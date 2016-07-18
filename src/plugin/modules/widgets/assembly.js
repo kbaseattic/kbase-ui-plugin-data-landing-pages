@@ -20,33 +20,28 @@ define([
                 templates = {
                     overview: "<div class='row'>"
                         + "    <div class='col-md-6'>"
-                        + "        <table class='table table-bordered'>"
+                        + "        <table class='table'>"
                         + "            <tbody>"
                         + "                <tr><td><b>Number of Contigs</b></td><td data-element='numContigs'></td></tr>"
                         + "                <tr><td><b>Total DNA Size</b></td><td data-element='dnaSize'></td></tr>"
                         + "                <tr><td><b>GC %</b></td><td data-element='gcPercent'></td></tr>"
+                        + "            </tbody>"
+                        + "        </table>"
+                        + "    </div>"
+                        + "    <div class='col-md-6'>"
+                        + "        <table class='table'>"
+                        + "            <tbody>"
                         + "                <tr><td><b>External Source</b></td><td data-element='externalSource'></td></tr>"
                         + "                <tr><td><b>External Source ID</b></td><td data-element='externalId'></td></tr>"
                         + "                <tr><td><b>External Source Origination Date</b></td><td data-element='externalDate'></td></tr>"                        
                         + "            </tbody>"
                         + "        </table>"
                         + "    </div>"
-                        + "</div>"
-                        + "<div class='row'>"
-                        + "    <div class='col-md-5 col-md-offset-1'>"
-                        + "        <div data-element='contig_gc_percent_scatter'></div>"
-                        + "    </div>"
-                        + "    <div class='col-md-5'>"
-                        //+ "        <div data-element='contig_lengths_scatter'></div>"
-                        + "        <div data-element='nx_plot'></div>"
-                        + "    </div>"
-                        + "</div>"
-                        + "<div class='row'>"
                         + "</div>",
                     quality: "<div class='row'>"
-                            + "    <div class='col-md-5 col-md-offset-1'>"
-                            + "        <div data-element='contig_gc_hist'></div>"
-                            + "    </div>"
+                           + "    <div class='col-md-5 col-md-offset-1'>"
+                           + "        <div data-element='contig_gc_hist'></div>"
+                           + "    </div>"
                            + "    <div class='col-md-5'>"
                            + "        <div data-element='contig_lengths_hist'></div>"
                            + "    </div>"
@@ -56,7 +51,8 @@ define([
                            + "        <div data-element='contig_gc_vs_length'></div>"
                            + "    </div>"
                            + "    <div class='col-md-5'>"
-                            + "    </div>"
+                           + "        <div data-element='nx_plot'></div>"
+                           + "    </div>"
                            + "</div>",
                     annotations: "<div class='row'>"
                                + "    <div data-element='linked_annotations'></div>"
@@ -73,11 +69,11 @@ define([
                 return div([
                     html.makePanel({
                         title: 'Assembly Summary',
-                        content: div({dataElement: 'overview'}, html.loading())
+                        content: div({id: 'overview'}, html.loading())
                     }),
                     html.makePanel({
-                        title: 'Assembly Quality',
-                        content: div({dataElement: 'quality'}, html.loading())
+                        title: 'Assembly Statistics',
+                        content: div({id: 'quality'}, html.loading())
                     })                    
                 ]);
             }
@@ -101,12 +97,12 @@ define([
                             title: '<b>Contig Length Distribution</b>',
                             fontsize: 24,
                             xaxis: { title: '<b>Length (bp)</b>' },
-                            yaxis: { title: '<b>Binned Contigs</b>' }
+                            yaxis: { title: '<b>Count</b>' }
                         },
                         data: [{
                             x: Object.keys(lengths).map(function (id) { return lengths[id]; }),
                             type: 'histogram',
-                            marker: { line: {width: 1, color: 'rgb(255, 255,255)'} }
+                            marker: { line: {width: 1, color: 'rgb(255,255,255)'} }
                         }]
                     },
                     {
@@ -123,7 +119,7 @@ define([
                             hoverinfo: 'x+text',
                             type: 'histogram',
                             marker: {
-                                line: {width: 1, color: 'rgb(255, 255,255)'},
+                                line: {width: 1, color: 'rgb(255,255,255)'},
                                 color: marker_color
                             }
                         }]
@@ -145,6 +141,7 @@ define([
                     //        hoverinfo: 'x+y'
                     //    }]
                     //},
+                    /*
                     {
                         div: container.querySelector("div[data-element='contig_gc_percent_scatter']"),
                         data: [{
@@ -167,6 +164,7 @@ define([
                             }
                         }
                     },
+                    */
                     {
                         div: container.querySelector("div[data-element='contig_gc_vs_length']"),
                         layout: {
@@ -201,7 +199,7 @@ define([
 //                                ticktext: _.map(_.range(0, 110, 10), function(x){ return '' + x }),
                                 showgrid: true
                             },
-                            yaxis: {title: '<b>Length (bp)</b>'}
+                            yaxis: {title: '<b>Contig Length (bp)</b>'}
                         },
                         data: [{
                                 type: 'scatter',
@@ -224,7 +222,10 @@ define([
                     }
                 ];
 
-                _.each(plots, function(o) { plotly.newPlot(o.div, o.data, o.layout); });
+                _.each(plots, function(o) {
+                    o.div.innerHTML = "";
+                    plotly.newPlot(o.div, o.data, o.layout);
+                });
             }
             
             function renderNumContigs(numContigs) {
@@ -264,16 +265,21 @@ define([
                  *   ...
                  */
                 
-                container.querySelector('div[data-element="overview"]').innerHTML = templates.overview;
-                container.querySelector('div[data-element="quality"]').innerHTML = templates.quality;
-                                
+                container.querySelector('div[id="overview"]').innerHTML = templates.overview;
+                container.querySelector('div[id="quality"]').innerHTML = templates.quality;
+ 
+                Array.from(container.querySelectorAll("[data-element]")).forEach(function (e) {
+                    e.innerHTML = html.loading();
+                });
+                 
                 var contig_ids,
                     contig_lengths,
                     contigs_gc,
                     assembly = Assembly.client({
                         url: runtime.getConfig('services.assembly_api.url'),
                         token: runtime.service('session').getAuthToken(),
-                        ref: utils.getRef(params)
+                        ref: utils.getRef(params),
+                        timeout: 900000
                     });
                 
                 return assembly.number_contigs()
