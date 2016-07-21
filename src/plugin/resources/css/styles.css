@@ -25,6 +25,13 @@ td {
     word-wrap: break-word;
 }
 
+div.lp_summary_box {
+    margin: 20px;
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(16,206,52,0.1);
+}
+
 /*
 .filters_form {
     background-color: #ccc;
