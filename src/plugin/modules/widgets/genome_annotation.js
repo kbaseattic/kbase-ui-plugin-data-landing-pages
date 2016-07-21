@@ -42,9 +42,55 @@ define([
                 panelTemplates = {
                     overview: handlebars.compile("<div class='row'>"
                             + "    <div class='col-md-6'>"
-                            + "        <div>"
-                            + "            <strong><span data-element='taxonLink'></span></strong>"
+                            + "        <div class='lp_summary_box'>"
+                            + "            <h4>Source Information</h4>"
                             + "            <table class='table'>"
+                            + "                <tr>"
+                            + "                    <td><b>Annotation Source</b></td>"
+                            + "                    <td data-element='externalSource'></td>"
+                            + "                </tr>"
+                            + "                <tr>"
+                            + "                    <td><b>Annotation Source Date</b></td>"
+                            + "                    <td data-element='externalSourceDate'></td>"
+                            + "                </tr>"
+                            + "                <tr>"
+                            + "                    <td><b>Annotation Data Release</b></td>"
+                            + "                    <td data-element='dataRelease'></td>"
+                            + "                </tr>"
+                            + "                <tr>"
+                            + "                    <td><b>Original Annotation File Name</b></td>"
+                            + "                    <td data-element='originalFilename'></td>"
+                            + "                </tr>"
+                            + "                <tr>"
+                            + "                    <td><b>Assembly Source</b></td>"
+                            + "                    <td data-element='assemblySource'></td>"
+                            + "                </tr>"
+                            + "                <tr>"
+                            + "                    <td><b>Assembly Source Date</b></td>"
+                            + "                    <td data-element='assemblySourceDate'></td>"
+                            + "                </tr>"
+                            + "                <tr>"
+                            + "                    <td><b>Assembly Identifier</b></td>"
+                            + "                    <td data-element='assemblyID'></td>"
+                            + "                </tr>"
+                            + "            </table>"
+                            + "        </div>"
+                            + "        <div class='lp_summary_box'>"
+                            + "            <h4>Genome Features</h4>"
+                            + "            <table class='table' data-element='featureTypeCounts'>"
+                            + "            </table>"
+                            + "        </div>"
+                            + "        <!--<div class='lp_summary_box'>"
+                            + "            <h4>Functional Categories</h4>"
+                            + "            <table class='table' data-element='functionalCategories'>"
+                            + "            </table>"
+                            + "        </div>-->"
+                            + "    </div>"
+                            + "    <div class='col-md-6'>"
+                            + "        <div class='lp_summary_box'>"
+                            + "            <h4>Organism Identity</h4>"
+                            + "            <table class='table'>"
+                            + "                <caption><strong><span data-element='taxonLink'></span></strong></caption>"
                             + "                <tr>"
                             + "                    <td><b>NCBI taxonomic ID</b></td>"
                             + "                    <td data-element='taxonId'></td>"
@@ -66,8 +112,11 @@ define([
                             + "                    <td data-element='aliases'></td>"
                             + "                </tr>"
                             + "            </table>"
-                            + "            <strong><span data-element='assemblyLink'></span></strong>"
+                            + "        </div>"
+                            + "        <div class='lp_summary_box'>"
+                            + "            <h4>Assembly Information</h4>"
                             + "            <table class='table'>"
+                            + "                <caption><strong><span data-element='assemblyLink'></span></strong></caption>"
                             + "                <tr>"
                             + "                    <td><b>Number of Contigs</b></td>"
                             + "                    <td data-element='numContigs'></td>"
@@ -82,9 +131,6 @@ define([
                             + "                </tr>"
                             + "            </table>"
                             + "        </div>"
-                            + "    </div>"
-                            + "    <div class='col-md-6'>"
-                            + "        <div id='featureTypesPlot'></div>"
                             + "    </div>"
                             + "</div>"),
                     filters: handlebars.compile("    <div class='col-md-12' id='filter_panel'>"
@@ -191,19 +237,22 @@ define([
                                               + "-->"
                                               + "    </div>"),
                     annotations: handlebars.compile("<div class='row'>"
-                                                  + "    <div class=col-md-12'>"
+                                                  + "    <div class='col-md-12'>"
+                                                  + "        <button class='btn btn-primary'>Inspect Feature Data</button>"
+                                                  + "    </div>"
+                                                  + "    <div class='col-md-12 hidden'>"
                                                   + "        <div class='col-md-2'>"
                                                   + "            <h4>Annotation Filters</h4>"
                                                   + "        </div>"
                                                   + "    </div>"
-                                                  + "    <div class='col-md-12' id='filters_div'></div>"
-                                                  + "    <div class=col-md-12'>"
+                                                  + "    <div class='col-md-12 hidden' id='filters_div'></div>"
+                                                  + "    <div class='col-md-12 hidden'>"
                                                   + "        <div class='col-md-3'>"
                                                   + "            <h4>Annotations</h4>"
                                                   + "            <h5>Limited to 1,000 results</h5>"
                                                   + "        </div>"
                                                   + "    </div>"
-                                                  + "    <div class='col-md-12' data-element='feature_table_div'></div>"
+                                                  + "    <div class='col-md-12 hidden' data-element='feature_table_div'></div>"
                                                   + "</div>"),
                     features: handlebars.compile("<div class='row'>"
                                                   + "    <div class='col-md-8' id='feature_table_container'>"
@@ -580,49 +629,70 @@ define([
                 plotly.newPlot("featureTypesPlot", data, plot_layout);
             }
             
-            function renderAssemblyLink(ref) {
-                container.querySelector('[data-element="assemblyLink"]').innerHTML = "<a href='#dataview/" + ref + "' target='_blank'>Assembly</a>";
-            }
-            
-            function renderNumberContigs(numContigs) {
-                container.querySelector('[data-element="numContigs"]').innerHTML = numeral(numContigs).format('0,0');
-            }
-
-            function renderDNASize(dnaSize) {
-                container.querySelector('[data-element="dnaSize"]').innerHTML = numeral(dnaSize).format('0,0');
-            }
-            
-            function renderGC(gc) {
-                container.querySelector('[data-element="gc"]').innerHTML = numeral(gc).format('0.00%');
-            }
-            
             function renderTaxonLink(ref) {
                 if (ref === null) {
                     container.querySelector('[data-element="taxonLink"]').innerHTML = "Taxon"
                 }
                 else {
-                    container.querySelector('[data-element="taxonLink"]').innerHTML = "<a href='#dataview/" + ref + "' target='_blank'>Taxon</a>";
+                    container.querySelector('[data-element="taxonLink"]').innerHTML = "<a href='#dataview/" + ref + "' target='_blank'>Click here for more about this Taxon</a>";
                 }
             }
             
-            function renderTaxId(taxId) {
-                container.querySelector('[data-element="taxonId"]').innerHTML = taxId;
-            }
-            
-            function renderScientificName(scientificName) {
-                container.querySelector('[data-element="taxonName"]').innerHTML = scientificName;
+            function renderTaxon(data) {
+                /*
+                 *'taxonomy': {'kingdom': 'kingdom not present', 'scientific_lineage': ['cellular organisms', 'Eukaryota', 'Rhodophyta', 'Bangiophyceae', 'Cyanidiales', 'Cyanidiaceae', 'Cyanidioschyzon', 'Cyanidioschyzon merolae'], 'scientific_name': 'Cyanidioschyzon merolae strain 10D', 'genetic_code': 1, 'taxonomy_id': 280699, 'organism_aliases': ['No organism aliases present']}
+                 */
+                
+                var aliases = handlebars.compile("{{#each organism_aliases}}<div>{{this}}</div>{{/each}}");
+                
+                container.querySelector('[data-element="taxonId"]').innerHTML = data["taxonomy_id"];
+                container.querySelector('[data-element="taxonName"]').innerHTML = data["scientific_name"];
+                container.querySelector('[data-element="kingdom"]').innerHTML = data["kingdom"];
+                container.querySelector('[data-element="geneticCode"]').innerHTML = data["genetic_code"];
+                container.querySelector('[data-element="aliases"]').innerHTML = aliases({organism_aliases: data["organism_aliases"]});                
             }
 
-            function renderKingdom(kingdom) {
-                container.querySelector('[data-element="kingdom"]').innerHTML = kingdom;
+            function renderAssemblyLink(ref) {
+                container.querySelector('[data-element="assemblyLink"]').innerHTML = "<a href='#dataview/" + ref + "' target='_blank'>Click here for more about this Assembly</a>";
             }
             
-            function renderGeneticCode(geneticCode) {
-                container.querySelector('[data-element="geneticCode"]').innerHTML = geneticCode;
+            function renderAssembly(data) {
+                /*
+                 *'assembly': {'assembly_source_id': 'Red_Algae_Ensembl_2016_06_20_16_06_19.fa', 'assembly_source': 'unknown_source', 'contig_ids': ['chromosome:ASM9120v1:18:1:1253087:1', 'chromosome:ASM9120v1:20:1:1621617:1', 'chromosome:ASM9120v1:19:1:1282939:1', 'chromosome:ASM9120v1:12:1:859119:1', 'chromosome:ASM9120v1:13:1:866983:1', 'chromosome:ASM9120v1:11:1:852849:1', 'chromosome:ASM9120v1:4:1:513455:1', 'chromosome:ASM9120v1:7:1:584452:1', 'chromosome:ASM9120v1:Mito:1:32211:1', 'chromosome:ASM9120v1:10:1:839707:1', 'chromosome:ASM9120v1:5:1:528682:1', 'chromosome:ASM9120v1:Chloro:1:149987:1', 'chromosome:ASM9120v1:16:1:908485:1', 'chromosome:ASM9120v1:1:1:422616:1', 'chromosome:ASM9120v1:14:1:852727:1', 'chromosome:ASM9120v1:3:1:481791:1', 'chromosome:ASM9120v1:17:1:1232258:1', 'chromosome:ASM9120v1:15:1:902900:1', 'chromosome:ASM9120v1:9:1:810151:1', 'chromosome:ASM9120v1:6:1:536163:1', 'chromosome:ASM9120v1:8:1:739753:1', 'chromosome:ASM9120v1:2:1:457013:1'], 'num_contigs': 22, 'assembly_source_date': '01-APR-2016', 'gc_content': 0.5480838152077133, 'dna_size': 16728945}
+                 *
+                 */
+                
+                //assembly_source
+                //assembly_source_id
+                //assembly_source_date
+                container.querySelector('[data-element="numContigs"]').innerHTML = numeral(data["num_contigs"]).format('0,0');
+                container.querySelector('[data-element="dnaSize"]').innerHTML = numeral(data["dna_size"]).format('0,0');
+                container.querySelector('[data-element="gc"]').innerHTML = numeral(data["gc_content"]).format('0.00%');
+                //contig_ids
             }
             
-            function renderAliases(aliases) {
-                container.querySelector('[data-element="aliases"]').innerHTML = aliases;
+            function renderAnnotation(data) {
+                /*
+                 *'annotation': {'external_source': 'unknown_source', 'release': 'annotation release is not present', 'external_source_date': '01-APR-2016', 'feature_type_counts': {'misc_feature': 22, 'exon': 5133, 'mRNA': 4998, 'CDS': 4998, 'misc_RNA': 108, 'gene': 5106}, 'original_source_filename': 'Cyanidioschyzon_merolae.ASM9120v1.31.dat'}}
+                 *
+                 */
+                var counts = handlebars.compile("{{#each feature_type_counts}}" +
+                                                "<tr><td><b>{{this.[0]}}</b></td><td>{{this.[1]}}</td></tr>" +
+                                                "{{/each}}"),
+                    formatted_type_counts = [];
+                
+                Object.keys(data["feature_type_counts"]).sort().forEach(function (k) {
+                    formatted_type_counts.push([k, numeral(data["feature_type_counts"][k]).format('0,0')]);
+                });
+                
+                container.querySelector('[data-element="externalSource"]').innerHTML = data["external_source"];
+                container.querySelector('[data-element="externalSourceDate"]').innerHTML = data["external_source_date"];
+                container.querySelector('[data-element="dataRelease"]').innerHTML = data["release"];
+                container.querySelector('[data-element="originalFilename"]').innerHTML = data["original_source_filename"];
+                container.querySelector('[data-element="featureTypeCounts"]').innerHTML = counts({feature_type_counts: formatted_type_counts});
+                container.querySelector('[data-element="assemblySource"]').innerHTML = data["assembly_source"];
+                container.querySelector('[data-element="assemblySourceDate"]').innerHTML = data["assembly_source_date"];
+                container.querySelector('[data-element="assemblyID"]').innerHTML = data["assembly_source_id"];
             }
             
             // WIDGET API
@@ -651,26 +721,26 @@ define([
                     timeout: 900000
                 });
                 
+                
                 Array.from(container.querySelectorAll("[data-element]")).forEach(function (e) {
                     e.innerHTML = html.loading();
                 });
                 
-                container.querySelector("[id='featureTypesPlot']").innerHTML = html.loading();
                 
-                return genomeAnnotation.get_summary()
-                    .then(function (summary) {
-                        console.log(summary);
+                //container.querySelector("[id='featureTypesPlot']").innerHTML = html.loading();
+                
+                genomeAnnotation.taxon().then(function(ref) { renderTaxonLink(ref); });
+                genomeAnnotation.assembly().then(function(ref) { renderAssemblyLink(ref); });
+                
+                return genomeAnnotation.summary()
+                    .then(function (data) {
+                        console.log(data);
+                        
+                        renderTaxon(data);
+                        renderAssembly(data);
+                        renderAnnotation(data);
+                        
                         /*
-                        renderTaxonLink(taxon_ref);
-                        renderTaxId(taxId);
-                        renderScientificName(summary["scientific_name"], scientificName);
-                        renderKingdom(kingdom);
-                        renderGeneticCode(geneticCode);
-                        renderAliases(aliases);
-                        renderAssemblyLink(assembly_ref);
-                        renderNumberContigs(numContigs);
-                        renderDNASize(dnaSize);
-                        renderGC(gc);
                         annotation_data.contig_ids = ids;
                         var ftCounts = {},
                             ftypes = [],
