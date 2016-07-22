@@ -5,12 +5,12 @@ This covers Taxon, Assembly, GenomeAnnotation typed data.
 
 ## Quick Start for Developing Landing Page content only, no API changes
 
-1. Clone your fork of kbase-ui-plugin-data-landing-pages
+### 1. Clone your fork of kbase-ui-plugin-data-landing-pages
 ```
 git clone https://github.com/<username>/kbase-ui-plugin-data-landing-pages
 ```
 
-2. Clone your fork of kbase-ui using defaults 'dev' and target 'ci'
+### 2. Clone your fork of kbase-ui using defaults 'dev' and target 'ci'
 ```
 git clone -b develop https://github.com/<username>/kbase-ui
 cd kbase-ui
@@ -18,13 +18,17 @@ cp -pr config dev/config
 ```
 
 - Init the repo for bower and npm and build dependencies
-
+*NOTE* these steps may take a few minutes to complete
 ```
 make init
 make build
 ```
 
-3. Use your copy of kbase-ui-plugin-data-landing-pages when building kbase-ui
+#### Troubleshooting make init
+If you have trouble with an older version of npm, you can update with ```npm install npm -g```
+
+
+### 3. Use your copy of kbase-ui-plugin-data-landing-pages when building kbase-ui
 
 - Recommended for local file development, symlink your local directory, don't use make build after each edit
 *Important* Running ```make build``` again will destroy this link.
@@ -48,24 +52,27 @@ ln -s `pwd`/../kbase-ui-plugin-data-landing-pages/src/plugin build/build/client/
                 root: /absolute/path/to/parent/
 ```
 
-4. Start kbase-ui
+### 4. Start kbase-ui
 This starts a static nodejs server at :8080.
+
+*NOTE* You will need to either disable CORS in the developer settings of your browser, or run a local proxy that provides a localhost namespace for KBase services.
+
 ```
 make start
 ```
 
-4a. (optional) Launch browser window
+### 4a. (optional) Launch browser window
 This launches your default browser with a local instance of the kbase ui.
 ```
 make preview
 ```
 
-5. Stopping kbase-ui local nodejs server
+### 5. Stopping kbase-ui local nodejs server
 ```
 make stop
 ```
 
-6. Release tags
+### 6. Release tags
 
 - In order to propagate changes to kbase-ui-plugin-data-landing-pages to an instance of KBase, those changes must be tagged as a release, and then a commit to kbase-ui will have to be completed that updates the version to match the new release.
 
