@@ -14,22 +14,23 @@ git clone https://github.com/<username>/kbase-ui-plugin-data-landing-pages
 ```
 git clone -b develop https://github.com/<username>/kbase-ui
 cd kbase-ui
-cp -pr kbase-ui/config kbase-ui/dev/config
+cp -pr config dev/config
 ```
 
-- Init the repo for bower and npm
+- Init the repo for bower and npm and build dependencies
 
 ```
 make init
+make build
 ```
 
 3. Use your copy of kbase-ui-plugin-data-landing-pages when building kbase-ui
 
-- OPTION A, use your local directory, don't use make build after each edit
+- Recommended for local file development, symlink your local directory, don't use make build after each edit
 *Important* Running ```make build``` again will destroy this link.
 ```
-rm -rf ../build/build/client/modules/plugins/data-landing-pages
-ln -s ../kbase-ui-plugin-data-landing-pages/src/plugin ../build/build/client/modules/plugins/data-landing-pages
+rm -rf build/build/client/modules/plugins/data-landing-pages
+ln -s ../kbase-ui-plugin-data-landing-pages/src/plugin build/build/client/modules/plugins/data-landing-pages
 ```
 
 - OPTION B, use build.yml and make build after each edit
