@@ -30,10 +30,10 @@ make build
 *Important* Running ```make build``` again will destroy this link.
 ```
 rm -rf build/build/client/modules/plugins/data-landing-pages
-ln -s ../kbase-ui-plugin-data-landing-pages/src/plugin build/build/client/modules/plugins/data-landing-pages
+ln -s `pwd`/../kbase-ui-plugin-data-landing-pages/src/plugin build/build/client/modules/plugins/data-landing-pages
 ```
 
-- OPTION B, use build.yml and make build after each edit
+- Alternatively if you do not wish to symlink, use build.yml and make build after each edit
   - Edit the config dev/config/ui/dev/build.yml, and modify the stanza for kbase-ui-plugin-data-landing-pages.
     *Note* that this directory must be the parent of kbase-ui-plugin-data-landing-pages.
 ```
