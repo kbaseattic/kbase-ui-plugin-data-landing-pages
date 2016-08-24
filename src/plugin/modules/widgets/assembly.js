@@ -2,9 +2,9 @@
 /*jslint white: true, browser: true */
 define([
     'kb/common/html',
-    'kb/data/genomeAnnotation',
-    'kb/data/taxon',
-    'kb/data/assembly',
+    'kb_sdk_clients/GenomeAnnotationAPI/dev/GenomeAnnotationAPIClient',
+    'kb_sdk_clients/TaxonAPI/dev/TaxonAPIClient',
+    'kb_sdk_clients/AssemblyAPI/dev/AssemblyAPIClient',
     '../utils',
     'numeral',
     'handlebars',
@@ -271,41 +271,43 @@ define([
                 Array.from(container.querySelectorAll("[data-element]")).forEach(function (e) {
                     e.innerHTML = html.loading();
                 });
-                 
-                var contig_ids,
-                    contig_lengths,
-                    contigs_gc,
-                    assembly = Assembly.client({
-                        url: runtime.getConfig('services.assembly_api.url'),
-                        token: runtime.service('session').getAuthToken(),
-                        ref: utils.getRef(params),
-                        timeout: 900000
-                    });
                 
-                return assembly.number_contigs()
+                var assemblyRef = utils.getRef(params);
+
+                var assemblyClient = new Assembly({
+                                        url: runtime.getConfig('services.service_wizard.url'),
+                                        auth: {'token':runtime.service('session').getAuthToken()},
+                                        version: 'dev'
+                                    });
+
+                var contig_ids;
+                var contig_lengths;
+                var contigs_gc;
+
+                return assemblyClient.get_number_contigs(assemblyRef)
                     .then(function (numContigs) {
                         renderNumContigs(numContigs);
-                        return assembly.dna_size();
+                        return assemblyClient.get_dna_size(assemblyRef);
                     })
                     .then(function (dnaSize) {
                         renderDNASize(dnaSize);
-                        return assembly.gc_content();
+                        return assemblyClient.get_gc_content(assemblyRef);
                     })
                     .then(function (gc) {
                         renderGC(gc);
-                        return assembly.external_source_info();
+                        return assemblyClient.get_external_source_info(assemblyRef);
                     })
                     .then(function(external_source_info) {
                         renderExternalSourceInfo(external_source_info);
-                        return assembly.contig_ids();
+                        return assemblyClient.get_contig_ids(assemblyRef);
                     })
                     .then(function (ids) {
                         contig_ids = ids;
-                        return assembly.contig_lengths();
+                        return assemblyClient.get_contig_lengths(assemblyRef);
                     })
                     .then(function (lengths) {
                         contig_lengths = lengths;
-                        return assembly.contig_gc_content();
+                        return assemblyClient.get_contig_gc_content(assemblyRef);
                     })
                     .then(function (gc) {
                         contigs_gc = gc;
