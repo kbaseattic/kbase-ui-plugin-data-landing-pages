@@ -21,6 +21,13 @@ install:
             module: plugins/data-landing-pages/modules/widgets/assembly
             type: factory
         -
+            module: kb_dataApiWidgets_assemblyNarrativeTable
+            id: plugins/data-landing-pages/modules/widgets/kbaseGenomeAnnotationAssembly
+            title: Assembly View
+            config:
+                jqueryName: kbaseGenomeAnnotationAssembly
+            type: kbwidget
+        -
             id: kb_dataApiWidgets_genome_annotation
             module: plugins/data-landing-pages/modules/widgets/genome_annotation
             type: factory

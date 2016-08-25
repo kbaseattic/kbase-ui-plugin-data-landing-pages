@@ -1,33 +1,25 @@
 
 define (
     [
-        'kbwidget',
-        'bootstrap',
         'jquery',
-        'kbase-client-api',
-        'jquery-dataTables',
-        'kbaseAuthenticatedWidget',
-        'kbaseTable',
-        'kbaseTabs',
-        'AssemblyAPI-client-api',
-        'narrativeConfig',
-        'bluebird'
+        'bluebird',
+        'bootstrap',
+        'datatables',
+        'kb/widget/legacy/authenticatedWidget',
+        'kb/service/client/workspace',
+        'kb_sdk_clients/AssemblyAPI/dev/AssemblyAPIClient',
     ], function(
-        KBWidget,
-        bootstrap,
         $,
-        kbase_client_api,
+        Promise,
+        bootstrap,
         jquery_dataTables,
         kbaseAuthenticatedWidget,
-        kbaseTable,
-        kbaseTabs,
-        AssemblyAPI_client_api,
-        Config,
-        Promise
+        Workspace,
+        Assembly
     ) {
     'use strict';
 
-    return KBWidget({
+    $.KBWidget({
         name: "kbaseGenomeAnnotationAssembly",
         parent : kbaseAuthenticatedWidget,
         version: "1.0.0",
@@ -40,24 +32,41 @@ define (
             this._super(options);
 
             var $self = this;
-            $self.obj_ref = $self.options.wsNameOrId + '/' + $self.options.objNameOrId;
+
+            $self.runtime = options.runtime;
+
+            if($self.options.ref) {
+                $self.obj_ref = $self.options.ref;
+            } else {
+                $self.obj_ref = $self.options.wsNameOrId + '/' + $self.options.objNameOrId;
+            }
             $self.link_ref = $self.obj_ref;
 
-            $self.assembly = new AssemblyAPI(Config.url('service_wizard'),{'token':$self.authToken()});
-            $self.ws = new Workspace(Config.url('workspace'),{'token':$self.authToken()});
+            $self.assembly = new Assembly({
+                                        url: $self.runtime.getConfig('services.service_wizard.url'),
+                                        auth: {'token':$self.runtime.service('session').getAuthToken()},
+                                        version: 'dev'
+                                    });
+            $self.ws = new Workspace($self.runtime.getConfig('services.workspace.url'),{'token':$self.runtime.service('session').getAuthToken()});
             
             $self.$elem.append($('<div>').attr('align', 'center').append($('<i class="fa fa-spinner fa-spin fa-2x">')));
 
             // 1) get stats, and show the panel
             var basicInfoCalls = [];
             basicInfoCalls.push(
-                $self.assembly.get_stats(this.obj_ref, null)
-                        .done(function(stats) {
+                $self.assembly.get_stats($self.obj_ref, null)
+                        .then(function(stats) {
                             $self.assembly_stats = stats;
                         }));
             basicInfoCalls.push(
-                $self.ws.get_object_info_new({objects: [{'ref':this.obj_ref}], includeMetadata:1})
-                        .done(function(info) {
+                $self.assembly.get_external_source_info($self.obj_ref, null)
+                        .then(function(info) {
+                            $self.external_source_info = info;
+                        }));
+
+            basicInfoCalls.push(
+                $self.ws.get_object_info_new({objects: [{'ref':$self.obj_ref}], includeMetadata:1})
+                        .then(function(info) {
                             $self.assembly_obj_info = info[0];
                             $self.link_ref = info[0][6] + '/' + info[0][1] + '/' + info[0][4];
                         }));
@@ -68,6 +77,7 @@ define (
                 .catch(function(err) {
                     $self.$elem.empty();
                     $self.$elem.append('Error' + JSON.stringify(err));
+                    console.error(err);
                 });
 
             return this;
@@ -102,10 +112,6 @@ define (
             var $container = this.$elem;
             $container.empty();
 
-            var $tabPane = $('<div>');
-            $container.append($tabPane);
-
-
             // Build the overview table
             var $overviewTable = $('<table class="table table-striped table-bordered table-hover" style="margin-left: auto; margin-right: auto;"/>');
 
@@ -113,34 +119,18 @@ define (
                 return $('<tr>').append($('<td>').append(key)).append($('<td>').append(value));
             }
 
-            $overviewTable.append(get_table_row('KBase Object Name',
-                '<a href="/#dataview/'+$self.link_ref + '" target="_blank">' + $self.assembly_obj_info[1] +'</a>' ));
-                // leave out version for now, because that is not passed into data widgets
-                //'<a href="/#dataview/'+$self.link_ref + '" target="_blank">' + $self.assembly_obj_info[1] + ' (v'+$self.assembly_obj_info[4]+')'+'</a>' ));
             $overviewTable.append(get_table_row('Number of Contigs', $self.assembly_stats['num_contigs'] ));
             $overviewTable.append(get_table_row('Total GC Content',  String(($self.assembly_stats['gc_content']*100).toFixed(2)) + '%' ));
             $overviewTable.append(get_table_row('Total Length',      String($self.numberWithCommas($self.assembly_stats['dna_size']))+' bp'  )  );
+
+            $overviewTable.append(get_table_row('External Source',         $self.external_source_info['external_source']  ));
+            $overviewTable.append(get_table_row('External Source ID',      $self.external_source_info['external_source_id']  ));
+            $overviewTable.append(get_table_row('Source Origination Date', $self.external_source_info['external_source_origination_date']  ));
             
-
-            // Build the tabs
-            var $tabs =  new kbaseTabs($tabPane, {
-                    tabPosition : 'top',
-                    canDelete : true, //whether or not the tab can be removed.
-                    tabs : [
-                        {
-                            tab : 'Assembly Summary',                               //name of the tab
-                            content : $('<div>').append($overviewTable),  //jquery object to stuff into the content
-                            canDelete : false,                             //override the canDelete param on a per tab basis
-                            show : true,      
-                        }, {
-                            tab : 'Contigs',
-                            canDelete : false,
-                            showContentCallback: function() { return $self.addContigList(); } // if you don't want to show the content right away, add a callback method that returns the content...
-                        },
-                    ],
-                }
-            );
-
+            
+            // add the stuff
+            $container.append($('<div>').append($overviewTable));
+            $container.append($('<div>').append($self.addContigList()));
         },
 
         addContigList: function() {
@@ -158,12 +148,12 @@ define (
             var loadingCalls = [];
             loadingCalls.push(
                 $self.assembly.get_contig_lengths(this.obj_ref, null)
-                            .done(function(lengths) {
+                            .then(function(lengths) {
                                 $self.contig_lengths = lengths;
                             }));
             loadingCalls.push(
                 $self.assembly.get_contig_gc_content(this.obj_ref, null)
-                    .done(function(gc) {
+                    .then(function(gc) {
                                 $self.contig_gc = gc;
                             }));
 
