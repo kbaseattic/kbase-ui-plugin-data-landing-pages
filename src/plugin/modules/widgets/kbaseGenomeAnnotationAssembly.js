@@ -45,7 +45,7 @@ define (
             $self.assembly = new Assembly({
                                         url: $self.runtime.getConfig('services.service_wizard.url'),
                                         auth: {'token':$self.runtime.service('session').getAuthToken()},
-                                        version: 'dev'
+                                        version: 'release'
                                     });
             $self.ws = new Workspace($self.runtime.getConfig('services.workspace.url'),{'token':$self.runtime.service('session').getAuthToken()});
             
@@ -54,12 +54,12 @@ define (
             // 1) get stats, and show the panel
             var basicInfoCalls = [];
             basicInfoCalls.push(
-                $self.assembly.get_stats($self.obj_ref, null)
+                $self.assembly.get_stats($self.obj_ref)
                         .then(function(stats) {
                             $self.assembly_stats = stats;
                         }));
             basicInfoCalls.push(
-                $self.assembly.get_external_source_info($self.obj_ref, null)
+                $self.assembly.get_external_source_info($self.obj_ref)
                         .then(function(info) {
                             $self.external_source_info = info;
                         }));

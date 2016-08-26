@@ -256,7 +256,7 @@ define([
                 var assemblyClient = new Assembly({
                                         url: runtime.getConfig('services.service_wizard.url'),
                                         auth: {'token':runtime.service('session').getAuthToken()},
-                                        version: 'dev'
+                                        version: 'release'
                                     });
 
                 var contig_ids;
@@ -271,13 +271,13 @@ define([
                         })
                     );
                 plotDataCalls.push(
-                    assemblyClient.get_contig_lengths(assemblyRef)
+                    assemblyClient.get_contig_lengths(assemblyRef, null)
                         .then(function(lengths) {
                             contig_lengths = lengths;
                         })
                     );
                 plotDataCalls.push(
-                    assemblyClient.get_contig_gc_content(assemblyRef)
+                    assemblyClient.get_contig_gc_content(assemblyRef, null)
                         .then(function(gc) {
                             contigs_gc = gc;
                         })
