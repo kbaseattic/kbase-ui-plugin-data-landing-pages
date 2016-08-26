@@ -2,40 +2,26 @@
 /*jslint white: true, browser: true */
 define([
     'kb/common/html',
-    'kb/data/genomeAnnotation',
-    'kb/data/taxon',
-    'kb/data/assembly',
+    'kb_sdk_clients/GenomeAnnotationAPI/dev/GenomeAnnotationAPIClient',
+    'kb_sdk_clients/TaxonAPI/dev/TaxonAPIClient',
+    'kb_sdk_clients/AssemblyAPI/dev/AssemblyAPIClient',
     '../utils',
+    '../widgets/kbaseGenomeAnnotationAssembly',
     'numeral',
     'handlebars',
     'plotly'
 ],
 
-    function (html, GenomeAnnotation, Taxon, Assembly, utils, numeral, handlebars, plotly) {
+    function (html, GenomeAnnotation, Taxon, Assembly, utils, kbaseGenomeAnnotationAssembly, numeral, handlebars, plotly) {
         'use strict';
 
         function factory(config) {
             var parent, container, runtime = config.runtime,
                 div = html.tag('div'),
                 templates = {
-                    overview: "<div class='row'>"
-                        + "    <div class='col-md-6'>"
-                        + "        <table class='table'>"
-                        + "            <tbody>"
-                        + "                <tr><td><b>Number of Contigs</b></td><td data-element='numContigs'></td></tr>"
-                        + "                <tr><td><b>Total DNA Size</b></td><td data-element='dnaSize'></td></tr>"
-                        + "                <tr><td><b>GC %</b></td><td data-element='gcPercent'></td></tr>"
-                        + "            </tbody>"
-                        + "        </table>"
-                        + "    </div>"
-                        + "    <div class='col-md-6'>"
-                        + "        <table class='table'>"
-                        + "            <tbody>"
-                        + "                <tr><td><b>External Source</b></td><td data-element='externalSource'></td></tr>"
-                        + "                <tr><td><b>External Source ID</b></td><td data-element='externalId'></td></tr>"
-                        + "                <tr><td><b>External Source Origination Date</b></td><td data-element='externalDate'></td></tr>"                        
-                        + "            </tbody>"
-                        + "        </table>"
+                    overview: 
+                          "<div class='row'>"
+                        + "    <div class='col-md-12 overview-content'>"
                         + "    </div>"
                         + "</div>",
                     quality: "<div class='row'>"
@@ -228,24 +214,6 @@ define([
                 });
             }
             
-            function renderNumContigs(numContigs) {
-                container.querySelector('td[data-element="numContigs"]').innerHTML = numeral(numContigs).format('0,0');
-            }
-
-            function renderDNASize(dnaSize) {
-                container.querySelector('td[data-element="dnaSize"]').innerHTML = numeral(dnaSize).format('0,0');
-            }
-
-            function renderGC(gc) {
-                container.querySelector('td[data-element="gcPercent"]').innerHTML = numeral(gc).format('0.00%');
-            }
-            
-            function renderExternalSourceInfo(external_source_info) {
-                container.querySelector('td[data-element="externalSource"]').innerHTML = external_source_info.external_source;
-                container.querySelector('td[data-element="externalId"]').innerHTML = external_source_info.external_source_id;
-                container.querySelector('td[data-element="externalDate"]').innerHTML = external_source_info.external_source_origination_date;
-            }
-            
 
             // WIDGET API
 
@@ -271,56 +239,64 @@ define([
                 Array.from(container.querySelectorAll("[data-element]")).forEach(function (e) {
                     e.innerHTML = html.loading();
                 });
-                 
-                var contig_ids,
-                    contig_lengths,
-                    contigs_gc,
-                    assembly = Assembly.client({
-                        url: runtime.getConfig('services.assembly_api.url'),
-                        token: runtime.service('session').getAuthToken(),
-                        ref: utils.getRef(params),
-                        timeout: 900000
-                    });
                 
-                return assembly.number_contigs()
-                    .then(function (numContigs) {
-                        renderNumContigs(numContigs);
-                        return assembly.dna_size();
-                    })
-                    .then(function (dnaSize) {
-                        renderDNASize(dnaSize);
-                        return assembly.gc_content();
-                    })
-                    .then(function (gc) {
-                        renderGC(gc);
-                        return assembly.external_source_info();
-                    })
-                    .then(function(external_source_info) {
-                        renderExternalSourceInfo(external_source_info);
-                        return assembly.contig_ids();
-                    })
-                    .then(function (ids) {
-                        contig_ids = ids;
-                        return assembly.contig_lengths();
-                    })
-                    .then(function (lengths) {
-                        contig_lengths = lengths;
-                        return assembly.contig_gc_content();
-                    })
-                    .then(function (gc) {
-                        contigs_gc = gc;
+                // get the assembly reference
+                var assemblyRef = utils.getRef(params);
+
+                // use the modified assembly widget from the narrative
+                var $overviewDiv = $(container).find('.overview-content');
+                var $assemblySummaryWidgetDiv = $('<div>');
+                $assemblySummaryWidgetDiv.kbaseGenomeAnnotationAssembly({
+                        runtime: runtime,
+                        ref: assemblyRef
+                });
+                $overviewDiv.append($assemblySummaryWidgetDiv);
+
+                // Show the stats plots
+                var assemblyClient = new Assembly({
+                                        url: runtime.getConfig('services.service_wizard.url'),
+                                        auth: {'token':runtime.service('session').getAuthToken()},
+                                        version: 'release'
+                                    });
+
+                var contig_ids;
+                var contig_lengths;
+                var contigs_gc;
+
+                var plotDataCalls = [];
+                plotDataCalls.push(
+                    assemblyClient.get_contig_ids(assemblyRef)
+                        .then(function(ids) {
+                            contig_ids = ids;
+                        })
+                    );
+                plotDataCalls.push(
+                    assemblyClient.get_contig_lengths(assemblyRef, null)
+                        .then(function(lengths) {
+                            contig_lengths = lengths;
+                        })
+                    );
+                plotDataCalls.push(
+                    assemblyClient.get_contig_gc_content(assemblyRef, null)
+                        .then(function(gc) {
+                            contigs_gc = gc;
+                        })
+                    );
+
+                // Get all the data at the same time
+                return Promise.all(plotDataCalls)
+                    .then(function() {
                         var contig_length_values = _.values(contig_lengths);
                         var nx_values = utils.nx(contig_length_values, _.range(1,101,1));
                         renderPlots(contig_ids, contigs_gc, contig_lengths, nx_values);
                     })
-                    .catch(function (err) {
-                        console.log(err);
+                    .catch(function(err) {
+                        console.error(err);
                     });
             }
 
             function stop() {
                 // nothing to do
-                // typically this is where one would 
             }
 
             function detach() {

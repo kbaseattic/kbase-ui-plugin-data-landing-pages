@@ -2,15 +2,18 @@
 /*jslint white: true, browser: true */
 define([
     'kb/common/html',
-    'kb/data/genomeAnnotation',
-    'kb/data/taxon',
-    'kb/data/assembly',
+    'kb_sdk_clients/GenomeAnnotationAPI/dev/GenomeAnnotationAPIClient',
+    'kb_sdk_clients/TaxonAPI/dev/TaxonAPIClient',
+    'kb_sdk_clients/AssemblyAPI/dev/AssemblyAPIClient',
+    'kb/service/client/workspace',
     '../utils',
     'bluebird',
     'jquery',
-    'underscore'
+    'underscore',
+    'datatables',
+    'datatables_bootstrap',
 ],
-    function (html, GenomeAnnotation, Taxon, Assembly, utils, bluebird, $, _) {
+    function (html, GenomeAnnotation, Taxon, Assembly, Workspace, utils, bluebird, $, _, DataTable) {
         'use strict';
 
         //http://localhost:8080/#dataview/1779/1006539/1
@@ -23,7 +26,8 @@ define([
                             + "        <table class='table table-bordered'>"
                             + "            <tr><td><b>NCBI taxonomic ID</b></td><td data-element='ncbi-id'></td></tr>"
                             + "            <tr><td><b>Scientific name</b></td><td data-element='scientific-name'></td></tr>"
-                            + "            <tr><td><b>Kingdom</b></td><td data-element='kingdom'></td></tr>"
+                            /* KINGDOM IS ALWAYS MISSING IN DATA!! + "            <tr><td><b>Kingdom</b></td><td data-element='kingdom'></td></tr>" */
+                            + "            <tr><td><b>Domain</b></td><td data-element='domain'></td></tr>"
                             + "            <tr><td><b>Genetic Code</b></td><td data-element='genetic-code'></td></tr>"
                             + "        </table>"
                             + "        <div>"
@@ -76,15 +80,15 @@ define([
                 }
             }
 
-            function renderLineage(name, name_lineage, ref_lineage) {
-                var list_o_links = [], i, len = name_lineage.length;
+            function renderLineage(decorated_lineage, my_scientific_name) {
+                var list_o_links = [], i, len = decorated_lineage.length;
                 
                 for (i = 0; i < len; i+=1) {
                     list_o_links.push("<div style='padding-left: " + String(i * 10) + "px'>"
-                                    + "<a target='_blank' href='#dataview/" + ref_lineage[i] + "'>"
-                                    + name_lineage[i] + "</a></div>");
+                                    + "<a href='#dataview/" + decorated_lineage[i]['ref'] + "'>"
+                                    + decorated_lineage[i]['scientific_name'] + "</a></div>");
                 }
-                list_o_links.push("<div style='padding-left: " + String(len * 10) + "px'>" + name + "</div>");
+                list_o_links.push("<div style='padding-left: " + String(len * 10) + "px'>" + my_scientific_name + "</div>");
                 
                 setDataElementHTML('lineage', div([div("<h5><strong>Lineage</strong></h5>"),
                                                    div(list_o_links)]));
@@ -96,21 +100,32 @@ define([
                 for (i = 0; i < len; i+=1) {
                     alias_divs.push("<div class='col-sm-offset-1'>" + aliases[i] + "</div>");
                 }
-                setDataElementHTML('aliases', alias_divs.join(""));
+                if(len>0) {
+                    setDataElementHTML('aliases', alias_divs.join(""));
+                } else {
+                    setDataElementHTML('aliases', 'None');
+                }
             }
             
-            function renderChildren(info) {
+            function renderChildren(decorated_children) {
                 var list_o_links = [],
                     i,
-                    len = info.length,
-                    sorted = info.sort(function (a,b) { return a[0].toLowerCase() > b[0].toLowerCase(); });
+                    len = decorated_children.length,
+                    sorted_children = decorated_children.sort(
+                                            function (a,b) { 
+                                                return a['scientific_name'].toLowerCase() > b['scientific_name'].toLowerCase(); 
+                                            });
                 
                 for (i = 0; i < len; i+=1) {
-                    list_o_links.push("<div><a target='_blank' href='#dataview/" + sorted[i][1] + "'>"
-                                    + sorted[i][0] + "</a></div>");
+                    list_o_links.push("<div><a href='#dataview/" + sorted_children[i]['ref'] + "'>"
+                                    + sorted_children[i]['scientific_name'] + "</a></div>");
                 }
                 
-                container.querySelector('div[id="taxonChildren"]').innerHTML = div(list_o_links);
+                if(len>0) {
+                    container.querySelector('div[id="taxonChildren"]').innerHTML = div(list_o_links);
+                } else {
+                    container.querySelector('div[id="taxonChildren"]').innerHTML = div('None');
+                }
             }
             
             function renderNCBILink(taxid) {
@@ -182,7 +197,6 @@ define([
                  */
                                 
                 var taxon_ref = utils.getRef(params),
-                    taxon,
                     scientific_name,
                     wikiInfo;
                 
@@ -315,100 +329,75 @@ define([
                 }
 
 
-                function getTaxonClient(ref) {
-                    return Taxon.client({
-                        url: runtime.getConfig('services.taxon_api.url'),
-                        token: runtime.service('session').getAuthToken(),
-                        ref: ref,
-                        timeout: 900000
+                function getTaxonClient() {
+                    return new Taxon({
+                        url: runtime.getConfig('services.service_wizard.url'),
+                        auth: {token: runtime.service('session').getAuthToken() },
+                        version: 'release'
                     });
                 }
-                
-                taxon = getTaxonClient(taxon_ref);
-                                       
-                return taxon.scientific_name().then(function (scientificName) {
-                        setDataElementHTML('scientific-name', scientificName);
-                        scientific_name = scientificName;
-                        return fetchWikipediaEntry(scientificName);
-                    })
-                    .then(function (wiki_content) {
-                        wikiInfo = wiki_content;
-                        if (wikiInfo === false) {
-                            //console.debug('No wikiInfo');
-                            renderWikipediaEntry(null);
-                            return false;
-                        }
-                        else {
-                            renderWikipediaEntry(wikiInfo);
-                        }
-                        return fetchWikipediaImageURL(wikiInfo.image);
-                    })
-                    .then(function (wikiImage) {
-                        if (wikiImage === null) {
-                            renderWikipediaImage(null);
-                        }
-                        else {
-                            renderWikipediaImage(wikiImage);
-                        }
-                        return taxon.scientific_lineage();
-                    })
-                    .then(function (lineage) {
-                        var refLineage = [];
-                        
-                        /*
-                         * Call get_parent() and collect the reference until undefined is returned from the client.
-                         * At that point, remove the 'root' reference and return the name lineage and reference lineage.
-                         **/
-                        function recursiveGetParent(t) {
-                            return t.parent().then(function (parent_ref) {
-                                if (parent_ref !== undefined) {
-                                    refLineage.unshift(parent_ref);
-                                    return recursiveGetParent(getTaxonClient(parent_ref));
+
+
+                var taxon = getTaxonClient();
+                var loadingCalls = [];
+
+                var scientificName;
+
+                // Call 1: do most the work, and kick off the scientific lineage + wikipedia fetching
+                loadingCalls.push(
+                    taxon.get_all_data({ ref:taxon_ref, exclude_children:1 })
+                            .then(function(data) {
+                                console.log('Taxonomy data', data);
+                                scientificName = data['scientific_name'];
+
+                                setDataElementHTML('scientific-name', scientificName);
+
+                                /* KINGDOM IS ALWAYS MISSING IN DATA --setDataElementHTML('kingdom', data['kingdom']); */
+                                setDataElementHTML('domain', data['domain']);
+                                renderNCBILink(data['taxonomic_id']);
+                                setDataElementHTML('genetic-code', data['genetic_code']);
+
+                                renderAliases(data['aliases']);
+
+                                return taxon.get_decorated_scientific_lineage({ ref:taxon_ref });
+                            })
+                            .then(function(lineage) {
+                                renderLineage(lineage['decorated_scientific_lineage'], scientificName)
+
+                                return fetchWikipediaEntry(scientificName);
+                            })
+                            .then(function (wiki_content) {
+                                wikiInfo = wiki_content;
+                                if (wikiInfo === false) {
+                                    //console.debug('No wikiInfo');
+                                    renderWikipediaEntry(null);
+                                    return false;
                                 }
                                 else {
-                                    // remove the 'root' element
-                                    refLineage.splice(0,1);
-                                    return [lineage, refLineage];
+                                    renderWikipediaEntry(wikiInfo);
                                 }
+                                return fetchWikipediaImageURL(wikiInfo.image);
+                            })
+                            .then(function (wikiImage) {
+                                if (wikiImage === null) {
+                                    renderWikipediaImage(null);
+                                }
+                                else {
+                                    renderWikipediaImage(wikiImage);
+                                }
+                            }));
+
+                // Call 3: get the decorated children
+                loadingCalls.push(
+                    taxon.get_decorated_children({ ref:taxon_ref })
+                            .then(function(lineage) {
+                                renderChildren(lineage['decorated_children'])
+                            }));
+
+                return Promise.all(loadingCalls)
+                            .catch(function(err) {
+                                console.error(err);
                             });
-                        }
-                        
-                        return recursiveGetParent(taxon);
-                    })
-                    .then(function(lineages) {
-                        renderLineage(scientific_name, lineages[0], lineages[1]);
-                        return taxon.kingdom();
-                    })
-                    .then(function(kingdom) {
-                        setDataElementHTML('kingdom', kingdom);
-                        return taxon.taxonomic_id();
-                    })
-                    .then(function(taxid) {
-                        renderNCBILink(taxid);
-                        return taxon.genetic_code();
-                    })
-                    .then(function(geneticCode) {
-                        setDataElementHTML('genetic-code', geneticCode);
-                        return taxon.aliases();
-                    })
-                    .then(function(aliases) {
-                        renderAliases(aliases);
-                        return taxon.children();
-                    })
-                    .then(function(children_refs) {
-                        // join together all the promises into a single array of child taxon info
-                        return bluebird.all(children_refs.map(function (ref) {
-                            return getTaxonClient(ref).scientific_name().then(function (name) {
-                                return [name, ref];
-                            });
-                        }));    
-                    })
-                    .then(function (childrenInfo) {
-                        renderChildren(childrenInfo);
-                    })
-                    .catch(function (err) {
-                        console.error(err);
-                    });
             }
 
             function stop() {
