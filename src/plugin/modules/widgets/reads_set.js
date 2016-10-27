@@ -15,7 +15,7 @@ define([
     'datatables_bootstrap'
     ],
     function (html, SetAPI, Workspace, utils, RSTemplate, Promise,
-              $, _, handlebars, Numeral, DataTable, DataTable_BS) {
+              $, _, handlebars, Numeral, DataTable) {
         'use strict';
 
         //http://localhost:8080/#dataview/11700/set_o_reads/1
@@ -187,7 +187,7 @@ define([
             }
 
             function start(params) {
-                Array.from(container.querySelectorAll("[data-element]"))
+                Array.prototype.slice.call(container.querySelectorAll("[data-element]"))
                 .forEach(function (e) {
                     e.innerHTML = html.loading();
                 });
