@@ -1,21 +1,29 @@
 /*global define */
 /*jslint white: true, browser: true, plusplus: true */
 define([
+    'jquery',
+    'handlebars',
+    'numeral',
+    'bluebird',
+    'datatables',
     'kb/common/html',
     'kb_sdk_clients/SetAPI/dev/SetAPIClient',
     'kb/service/client/workspace',
     '../utils',
     'text!../../resources/html/reads_set.html',
-    'bluebird',
-    'jquery',
-    'underscore',
-    'handlebars',
-    'numeral',
-    'datatables',
     'datatables_bootstrap'
-    ],
-    function (html, SetAPI, Workspace, utils, RSTemplate, Promise,
-              $, _, handlebars, Numeral, DataTable) {
+], function (
+    $,
+    handlebars,
+    Numeral,
+    Promise,
+    DataTable,
+    html,
+    SetAPI,
+    Workspace,
+    utils,
+    RSTemplate
+) {
         'use strict';
 
         //http://localhost:8080/#dataview/11700/set_o_reads/1
@@ -23,19 +31,18 @@ define([
             var parent,
                 container,
                 runtime = config.runtime,
-                reads_set_data = {},
                 div = html.tag('div'),
                 templates = $.parseHTML(RSTemplate),
                 outer = templates[0].innerHTML,
                 browse_fill = "{{#each readLibraries}}"
-                            + "<tr>"
-                            + "<td>{{this.name}}</td>"
-                            + "<td>{{this.type}}</td>"
-                            + "<td>{{this.data.read_count}}</td>"
-                            + "<td>{{this.data.read_size}}</td>"
-                            + "<td>{{this.data.insert_size_mean}}</td>"
-                            + "</tr>"
-                            + "{{/each}}";
+                    + "<tr>"
+                    + "<td>{{this.name}}</td>"
+                    + "<td>{{this.type}}</td>"
+                    + "<td>{{this.data.read_count}}</td>"
+                    + "<td>{{this.data.read_size}}</td>"
+                    + "<td>{{this.data.insert_size_mean}}</td>"
+                    + "</tr>"
+                    + "{{/each}}";
 
             // VIEW
 
@@ -57,62 +64,62 @@ define([
                     throw err;
                 }
             }
-            
+
             function renderSummary(data) {
                 var formatValue = function (data, type, row) {
                     var out = Numeral(data).format('0,0');
-                    
+
                     if (out === '0') {
                         return "Missing";
                     } else {
                         return out;
-                    }                    
+                    }
                 };
 
                 setDataElementHTML('reads-set-description', data.set.description);
                 setDataElementHTML('reads-set-type', data.set.type);
                 setDataElementHTML('reads-set-libraries-count',
-                                   Numeral(data.set.item_count).format('0,0'));
+                    Numeral(data.set.item_count).format('0,0'));
                 setDataElementHTML('reads-set-total-reads',
-                                   Numeral(data.set.stats.read_count).format('0,0'));
+                    Numeral(data.set.stats.read_count).format('0,0'));
                 setDataElementHTML('reads-set-total-basepairs',
-                                   Numeral(data.set.stats.bp_count).format('0,0'));
-                container.querySelector('[id="reads-set-browse-id"] table tbody').innerHTML = handlebars.compile(browse_fill)({'readLibraries': data.row_contents});
+                    Numeral(data.set.stats.bp_count).format('0,0'));
+                container.querySelector('[id="reads-set-browse-id"] table tbody').innerHTML = handlebars.compile(browse_fill)({ 'readLibraries': data.row_contents });
                 $('[id="reads-set-browse-id"]').removeClass('hidden');
                 $('[id="reads-set-browse-table"]').DataTable({
                     "columns": [
-                    {data: 'name'},
-                    {data: 'type'},
-                    {
-                        data: 'data.read_count',
-                        render: formatValue
-                    },
-                    {
-                        data: 'data.read_size',
-                        render: formatValue
-                    },
-                    {
-                        data: 'data.insert_size_mean',
-                        render: formatValue
-                    }
+                        { data: 'name' },
+                        { data: 'type' },
+                        {
+                            data: 'data.read_count',
+                            render: formatValue
+                        },
+                        {
+                            data: 'data.read_size',
+                            render: formatValue
+                        },
+                        {
+                            data: 'data.insert_size_mean',
+                            render: formatValue
+                        }
                     ]
                 });
             }
 
             // utility functions
-            
+
             function getReadsSetClient() {
                 return new SetAPI({
                     url: runtime.getConfig('services.service_wizard.url'),
-                    auth: {token: runtime.service('session').getAuthToken() },
+                    auth: { token: runtime.service('session').getAuthToken() },
                     version: 'release'
                 });
             }
-            
+
             function getWorkspaceClient() {
                 return new Workspace(
                     runtime.getConfig('services.workspace.url'),
-                    {token: runtime.service('session').getAuthToken()}
+                    { token: runtime.service('session').getAuthToken() }
                 );
             }
 
@@ -121,39 +128,54 @@ define([
                     wsClient = getWorkspaceClient(),
                     readsSetInfo = {};
 
-                return Promise.resolve(setAPI.get_reads_set_v1({
-                    'ref': utils.getRef(params),
-                    'include_item_info': 1
-                    }))
+                return setAPI.get_reads_set_v1({
+                    ref: utils.getRef(params),
+                    include_item_info: 1
+                })
                     .then(function (results) {
                         var refs = [],
-                            i = 0,
-                            reads_type = results.data.items[0].info[2];
+                            readsTypeId,
+                            readsType;
+
+                        // pull all reads objects to calculate summary stats
+                        // and individual browse row contents
+                        if (results.data.items.length === 0) {
+                            readsType = 'No Reads';
+                        } else {
+                            results.data.items.forEach(function (item, index) {
+                                if (index === 0) {
+                                    readsTypeId = item.info[2];
+                                } else if (item.info[2] !== readsTypeId) {
+                                    readsType = 'Mixed Reads';
+                                }
+                                refs.push({
+                                    ref: item.ref
+                                });
+                            });
+                        }
+                        if (!readsType) {
+                            readsType = readsTypeId.split('-')[0].split('.')[1]
+                        }
                         readsSetInfo.set = {
                             name: results.info[1],
-                            type: results.data.items[0].info[2].split('-')[0].split('.')[1],
+                            type: readsType,
                             description: results.data.description,
                             items: results.data.items,
                             item_count: results.data.items.length
                         };
-                        
-                        // pull all reads objects to calculate summary stats
-                        // and individual browse row contents
-                        for (i = 0; i < readsSetInfo.set.items.length; i++) {
-                            if (reads_type !== readsSetInfo.set.items[i].info[2]) {
-                                readsSetInfo.set.type = "Mixed Reads";
-                            }
-                            refs.push({'ref':readsSetInfo.set.items[i].ref});
-                        }
 
                         return refs;
                     })
                     .then(function (refs) {
-                        return Promise.resolve(wsClient.get_objects(refs));
+                        if (refs.length) {
+                            return wsClient.get_objects(refs);
+                        } else {
+                            return [];
+                        }
                     })
                     .then(function (data) {
-                        var i = 0,
-                            results = {};
+                        var i = 0;
+
                         readsSetInfo.row_contents = data;
                         readsSetInfo.set.stats = {
                             read_count: 0,
@@ -178,7 +200,7 @@ define([
                         container.appendChild('Error' + JSON.stringify(err));
                     });
             }
-            
+
             // WIDGET API
             function attach(node) {
                 parent = node;
@@ -188,9 +210,9 @@ define([
 
             function start(params) {
                 Array.prototype.slice.call(container.querySelectorAll("[data-element]"))
-                .forEach(function (e) {
-                    e.innerHTML = html.loading();
-                });
+                    .forEach(function (e) {
+                        e.innerHTML = html.loading();
+                    });
 
                 return fetchReadsSet(params).then(function (results) {
                     renderSummary(results);
