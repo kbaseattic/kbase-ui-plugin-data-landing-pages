@@ -14,26 +14,32 @@ install:
     widgets:
         -
             id: kb_dataApiWidgets_taxon
-            module: plugins/data-landing-pages/modules/widgets/taxon
+            module: widgets/taxon
             type: factory
         -
             id: kb_dataApiWidgets_assembly
-            module: plugins/data-landing-pages/modules/widgets/assembly
+            module: widgets/assembly
             type: factory
-        -
-            module: kb_dataApiWidgets_assemblyNarrativeTable
-            id: plugins/data-landing-pages/modules/widgets/kbaseGenomeAnnotationAssembly
-            title: Assembly View
-            config:
-                jqueryName: kbaseGenomeAnnotationAssembly
-            type: kbwidget
+        # -
+        #     module: widgets/kbaseGenomeAnnotationAssembly
+        #     id: kb_dataApiWidgets_assemblyNarrativeTable
+        #     title: Assembly View
+        #     config:
+        #         jqueryName: kbaseGenomeAnnotationAssembly
+        #     type: kbwidget
         -
             id: kb_dataApiWidgets_genome_annotation
-            module: plugins/data-landing-pages/modules/widgets/genome_annotation
+            module: widgets/genomeAnnotation/main
             type: factory
+        # -
+        #     module: plugins/data-landing-pages/modules/widgets/kbaseGenomeAnnotationAssembly
+        #     id: kb_dataApiWidgets_genome_annotation
+        #     config:
+        #         jqueryName: kbaseGenomeView
+        #     type: kbwidget
         -
             id: kb_dataApiWidgets_reads_set
-            module: plugins/data-landing-pages/modules/widgets/reads_set
+            module: widgets/reads_set
             type: factory
     types:
         -
@@ -128,7 +134,7 @@ install:
                     default: true
                     # This the title for the widget if a wrapper panel is requested
                     title: 'Data View'
-                    panel: false
+                    panel: true
                     # This is the widget id name as specified in the plugin
                     # it should follow standard namespacing. It should also be 
                     # defined above in the modules.

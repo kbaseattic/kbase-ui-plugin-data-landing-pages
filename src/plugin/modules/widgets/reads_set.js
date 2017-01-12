@@ -6,9 +6,9 @@ define([
     'numeral',
     'bluebird',
     'datatables',
-    'kb/common/html',
+    'kb_common/html',
     'kb_sdk_clients/SetAPI/dev/SetAPIClient',
-    'kb/service/client/workspace',
+    'kb_service/client/workspace',
     '../utils',
     'text!../../resources/html/reads_set.html',
     'datatables_bootstrap'
