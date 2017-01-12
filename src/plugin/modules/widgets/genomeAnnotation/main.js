@@ -14,59 +14,19 @@ Known issues/tasks:
 define([
     'jquery',
     'bluebird',
-
     'kb_common/jsonRpc/dynamicServiceClient',
     'kb_common/html',
+    '../../utils',
 
-    '../utils',
-
-    // 'jquery-dataTables',
-    // 'jquery-dataTables-bootstrap',
-
-    'bootstrap_datatables'
-
-    // 'kbase-client-api',
-    // 'kbaseTable',
-    // 'kbaseTabs',
-    // 'ContigBrowserPanel',
-    // 'util/string',
-
-    // 'kbase-generic-client-api',
-    // 'GenomeAnnotationAPI-client-api',
-    // 'AssemblyAPI-client-api',
-    // 'TaxonAPI-client-api',
-    // 'GenomeSearchUtil-client-api'
-
+    'datatables_bootstrap'
 ], function (
     $,
     Promise,
-
     GenericClient,
     html,
     utils
-
-
-
-
-    // jquery_dataTables,
-    // bootstrap,
-
-    // kbase_client_api,
-    // kbaseTable,
-    // kbaseTabs,
-    // ContigBrowserPanel,
-    // StringUtil,
-
-    // GenericClient,
-    // GenomeAnnotationAPI_client_api,
-    // AssemblyAPI_client_api,
-    // TaxonAPI_client_api,
-    // GenomeSearchUtil_client_api
-
 ) {
     'use strict';
-
-
 
     function tabData() {
         var names = ['Overview', 'Browse Features', 'Browse Contigs'];
@@ -119,7 +79,7 @@ define([
         var runtime = config.runtime;
         var container, hostNode;
 
-        var genomeRef = utils.getRef(params);
+        var genomeRef;
 
         // VARIOUS STUFF
 
@@ -254,173 +214,173 @@ define([
 
         // APP CYCLE
 
-        function renderOverviewPanel() {
-            div({
+        // function renderOverviewPanel() {
+        //     div({
+        //         style: {
+        //             marginTop: '15px'
+        //         }
+        //     }, div({
+        //             class: 'row'
+        //         }, [
+        //             div({
+        //                 class: 'col-md-8'
+        //             }, [
+        //                 table({
+        //                     class: 'table table-striped table-bordered table-hover',
+        //                     style: {
+        //                         marginLeft: 'auto',
+        //                         marginRight: 'auto',
+        //                         wordWrap: 'break-word',
+        //                         tableLayout: 'fixed'
+        //                     }
+        //                 }, [
+        //                     colgroup([
+        //                         col({
+        //                             span: '1',
+        //                             style: 'width: 25%'
+        //                         })
+        //                     ])
+        //                 ])
+        //             ]),
+        //             div({
+        //                 class: 'col-md-4'
+        //             })
+        //         ])
+        //     );
+
+        //     var id = '<a href="/#dataview/' + genomeData.ref + '" target="_blank">' + genomeData.ws_obj_name + '</a>'
+
+        //     var scientific_name = genomeData.scientific_name;
+        //     var domain = genomeData.domain;
+        //     var genetic_code = genomeData.genetic_code;
+        //     var source = genomeData.source;
+        //     var source_id = genomeData.source_id;
+
+        //     var taxonomy = $('<td>');
+        //     var taxLevels = genomeData.taxonomy.split(';');
+        //     for (var t = 0; t < taxLevels.length; t++) {
+        //         for (var space = 0; space < t; space++) {
+        //             if (space === 0) { taxonomy.append('<br>'); }
+        //             taxonomy.append('&nbsp;&nbsp;');
+        //         }
+        //         taxonomy.append(taxLevels[t]);
+        //     }
+        //     if (taxonomy.html() === '') {
+        //         taxonomy.empty().append('None available.');
+        //     }
+        //     $taxonomyDiv.append($('<table>').addClass('table table-striped table-bordered table-hover')
+        //         .append($('<tr>').append($('<td>').append('<b>Taxonomy</b>')))
+        //         .append($('<tr>').append(taxonomy)));
+
+        //     var n_features = genomeData.n_features;
+        //     if (n_features) {
+        //         n_features = numberWithCommas(n_features);
+        //     }
+
+        //     var overviewLabels = [
+        //         'KBase Object Name',
+        //         'Scientific Name',
+        //         'Domain',
+        //         'Genetic Code',
+        //         'Source',
+        //         'Source ID',
+        //         'Number of Features'
+        //     ];
+
+        //     var overviewData = [
+        //         id,
+        //         scientific_name,
+        //         domain,
+        //         genetic_code,
+        //         source,
+        //         source_id,
+        //         n_features
+        //     ];
+
+        //     for (var i = 0; i < overviewData.length; i++) {
+        //         $overviewTable.append(
+        //             $('<tr>')
+        //             .append($('<td>').append($('<b>').append(overviewLabels[i])))
+        //             .append($('<td>').append(overviewData[i])));
+        //     }
+        // }
+
+        //     function renderTabs(genomeData) {
+        //         container.empty();
+        //         var $tabPane = $('<div id="' + pref + 'tab-content">');
+        //         container.append($tabPane);
+        //         var tabObj = new kbaseTabs($tabPane, { canDelete: true, tabs: [] });
+
+        //         var tabData = self.tabData(genomeData);
+        //         var tabNames = tabData.names;
+        //         var tabIds = tabData.ids;
+
+        //         for (var i = 0; i < tabIds.length; i++) {
+        //             var tabDiv = $('<div id="' + pref + tabIds[i] + '"> ');
+        //             tabObj.addTab({ tab: tabNames[i], content: tabDiv, canDelete: false, show: (i == 0) });
+        //         }
+
+        //         ////////////////////////////// Overview Tab //////////////////////////////
+
+
+        //         var liElems = $tabPane.find('li');
+        //         for (var liElemPos = 0; liElemPos < liElems.length; liElemPos++) {
+        //             var liElem = $(liElems.get(liElemPos));
+        //             var aElem = liElem.find('a');
+        //             if (aElem.length != 1)
+        //                 continue;
+        //             var dataTab = aElem.attr('data-tab');
+        //             var genome_ref = self.genome_ref;
+        //             if (dataTab === 'Browse Features') {
+        //                 aElem.on('click', function () {
+        //                     self.buildGeneSearchView({
+        //                         $div: $('#' + pref + 'browse_features'),
+        //                         genomeSearchAPI: self.genomeSearchAPI,
+        //                         ref: genome_ref,
+        //                         idClick: function (featureData) {
+        //                             self.showFeatureTab(genome_ref, featureData, pref, tabObj);
+        //                         },
+        //                         contigClick: function (contigId) {
+        //                             self.showContigTab(genome_ref, contigId, pref, tabObj);
+        //                         }
+        //                     })
+        //                 });
+        //             } else if (dataTab === 'Browse Contigs') {
+        //                 aElem.on('click', function () {
+        //                     self.buildContigSearchView({
+        //                         $div: $('#' + pref + 'browse_contigs'),
+        //                         genomeSearchAPI: self.genomeSearchAPI,
+        //                         ref: genome_ref,
+        //                         contigClick: function (contigId) {
+        //                             self.showContigTab(genome_ref, contigId, pref, tabObj);
+        //                         }
+        //                     });
+        //                 });
+        //             }
+        //         }
+
+
+        //     };
+        // }
+
+        function render() {
+
+            container.innerHTML = div({
                 style: {
-                    marginTop: '15px'
+                    textAlign: 'center'
                 }
-            }, div({
-                    class: 'row'
-                }, [
-                    div({
-                        class: 'col-md-8'
-                    }, [
-                        table({
-                            class: 'table table-striped table-bordered table-hover',
-                            style: {
-                                marginLeft: 'auto',
-                                marginRight: 'auto',
-                                wordWrap: 'break-word',
-                                tableLayout: 'fixed'
-                            }
-                        }, [
-                            colgroup([
-                                col({
-                                    span: '1',
-                                    style: 'width: 25%'
-                                })
-                            ])
-                        ])
-                    ]),
-                    div({
-                        class: 'col-md-4'
-                    })
-                ])
-            );
+            }, html.loading());
 
-            var id = '<a href="/#dataview/' + genomeData.ref + '" target="_blank">' + genomeData.ws_obj_name + '</a>'
+            var genomeApi = new GenericClient({
+                module: 'GenomeAnnotationAPI',
+                url: runtime.config('services.service_wizard.url'),
+                token: runtime.service('session').getAuthToken()
+            });
 
-            var scientific_name = genomeData.scientific_name;
-            var domain = genomeData.domain;
-            var genetic_code = genomeData.genetic_code;
-            var source = genomeData.source;
-            var source_id = genomeData.source_id;
-
-            var taxonomy = $('<td>');
-            var taxLevels = genomeData.taxonomy.split(';');
-            for (var t = 0; t < taxLevels.length; t++) {
-                for (var space = 0; space < t; space++) {
-                    if (space === 0) { taxonomy.append('<br>'); }
-                    taxonomy.append('&nbsp;&nbsp;');
-                }
-                taxonomy.append(taxLevels[t]);
-            }
-            if (taxonomy.html() === '') {
-                taxonomy.empty().append('None available.');
-            }
-            $taxonomyDiv.append($('<table>').addClass('table table-striped table-bordered table-hover')
-                .append($('<tr>').append($('<td>').append('<b>Taxonomy</b>')))
-                .append($('<tr>').append(taxonomy)));
-
-            var n_features = genomeData.n_features;
-            if (n_features) {
-                n_features = numberWithCommas(n_features);
-            }
-
-            var overviewLabels = [
-                'KBase Object Name',
-                'Scientific Name',
-                'Domain',
-                'Genetic Code',
-                'Source',
-                'Source ID',
-                'Number of Features'
-            ];
-
-            var overviewData = [
-                id,
-                scientific_name,
-                domain,
-                genetic_code,
-                source,
-                source_id,
-                n_features
-            ];
-
-            for (var i = 0; i < overviewData.length; i++) {
-                $overviewTable.append(
-                    $('<tr>')
-                    .append($('<td>').append($('<b>').append(overviewLabels[i])))
-                    .append($('<td>').append(overviewData[i])));
-            }
-        }
-
-        function renderTabs(genomeData) {
-            container.empty();
-            var $tabPane = $('<div id="' + pref + 'tab-content">');
-            container.append($tabPane);
-            var tabObj = new kbaseTabs($tabPane, { canDelete: true, tabs: [] });
-
-            var tabData = self.tabData(genomeData);
-            var tabNames = tabData.names;
-            var tabIds = tabData.ids;
-
-            for (var i = 0; i < tabIds.length; i++) {
-                var tabDiv = $('<div id="' + pref + tabIds[i] + '"> ');
-                tabObj.addTab({ tab: tabNames[i], content: tabDiv, canDelete: false, show: (i == 0) });
-            }
-
-            ////////////////////////////// Overview Tab //////////////////////////////
-           
-
-            var liElems = $tabPane.find('li');
-            for (var liElemPos = 0; liElemPos < liElems.length; liElemPos++) {
-                var liElem = $(liElems.get(liElemPos));
-                var aElem = liElem.find('a');
-                if (aElem.length != 1)
-                    continue;
-                var dataTab = aElem.attr('data-tab');
-                var genome_ref = self.genome_ref;
-                if (dataTab === 'Browse Features') {
-                    aElem.on('click', function () {
-                        self.buildGeneSearchView({
-                            $div: $('#' + pref + 'browse_features'),
-                            genomeSearchAPI: self.genomeSearchAPI,
-                            ref: genome_ref,
-                            idClick: function (featureData) {
-                                self.showFeatureTab(genome_ref, featureData, pref, tabObj);
-                            },
-                            contigClick: function (contigId) {
-                                self.showContigTab(genome_ref, contigId, pref, tabObj);
-                            }
-                        })
-                    });
-                } else if (dataTab === 'Browse Contigs') {
-                    aElem.on('click', function () {
-                        self.buildContigSearchView({
-                            $div: $('#' + pref + 'browse_contigs'),
-                            genomeSearchAPI: self.genomeSearchAPI,
-                            ref: genome_ref,
-                            contigClick: function (contigId) {
-                                self.showContigTab(genome_ref, contigId, pref, tabObj);
-                            }
-                        });
-                    });
-                }
-            }
-
-
-        };
-    }
-
-    function render() {
-
-        container.innerHTML = div({
-            style: {
-                textAlign: 'center'
-            }
-        }, html.loading());
-
-        var genomeApi = new GenericClient({
-            module: 'GenomeAnnotationAPI',
-            url: runtime.config('services.service_wizard.url'),
-            token: runtime.service('session').getAuthToken()
-        });
-
-        // get info from metadata
-        genomeApi.callFunc('get_genome_v1', [{
+            // get info from metadata
+            genomeApi.callFunc('get_genome_v1', [{
                 genomes: [{
-                    ref: self.genome_ref
+                    ref: genomeRef
                 }],
                 no_data: 1
             }])
@@ -433,35 +393,52 @@ define([
                 renderError(err);
             });
 
-        return this;
-    }
+            return this;
+        }
 
-    // LIFECYCLE API
+        // LIFECYCLE API
 
-    function init() {
+        function init() {
 
-    }
+        }
 
-    function attach(node) {
-        hostNode = node;
-        container = hostNode.appendChild(document.createElement('div'));
+        function attach(node) {
+            hostNode = node;
+            container = hostNode.appendChild(document.createElement('div'));
+        }
+
+        function start(params) {
+            genomeRef =  utils.getRef(params);
+            container.innerHTML = 'Genome Annotation Here';
+            // return render();
+        }
+
+        function stop() {
+            return Promise.try(function () {
+                // nothing?
+                
+            });
+        }
+
+        function detach() {
+            if (hostNode && container) {
+                hostNode.removeChild(container);
+            }
+        }
+
+        return {
+            attach: attach,
+            start: start,
+            stop: stop,
+            detach: detach
+        };
     }
 
     return {
-        attach: attach,
-        start: start,
-        stop: stop,
-        detach: detach
+        make: function (config) {
+            return factory(config);
+        }
     };
-}
-
-
-
-return {
-    make: function (config) {
-        return factory(config);
-    }
-};
 
 
 });

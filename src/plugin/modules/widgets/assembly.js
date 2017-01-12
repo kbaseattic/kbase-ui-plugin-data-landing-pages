@@ -1,7 +1,7 @@
 /*global define */
 /*jslint white: true, browser: true */
 define([
-    'kb/common/html',
+    'kb_common/html',
     'kb_sdk_clients/GenomeAnnotationAPI/dev/GenomeAnnotationAPIClient',
     'kb_sdk_clients/TaxonAPI/dev/TaxonAPIClient',
     'kb_sdk_clients/AssemblyAPI/dev/AssemblyAPIClient',
@@ -20,32 +20,32 @@ define([
                 div = html.tag('div'),
                 templates = {
                     overview: 
-                          "<div class='row'>"
-                        + "    <div class='col-md-12 overview-content'>"
-                        + "    </div>"
-                        + "</div>",
-                    quality: "<div class='row'>"
-                           + "    <div class='col-md-5 col-md-offset-1'>"
-                           + "        <div data-element='contig_gc_hist'></div>"
-                           + "    </div>"
-                           + "    <div class='col-md-5'>"
-                           + "        <div data-element='contig_lengths_hist'></div>"
-                           + "    </div>"
-                           + "</div>"
-                           + "<div class='row'>"
-                           + "    <div class='col-md-5 col-md-offset-1'>"
-                           + "        <div data-element='contig_gc_vs_length'></div>"
-                           + "    </div>"
-                           + "    <div class='col-md-5'>"
-                           + "        <div data-element='nx_plot'></div>"
-                           + "    </div>"
-                           + "</div>",
-                    annotations: "<div class='row'>"
-                               + "    <div data-element='linked_annotations'></div>"
-                               + "</div>",
-                    taxons: "<div class='row'>"
-                          + "    <div data-element='linked_taxons'></div>"
-                          + "</div>"
+                          '<div class=\'row\'>'
+                        + '    <div class=\'col-md-12 overview-content\'>'
+                        + '    </div>'
+                        + '</div>',
+                    quality: '<div class=\'row\'>'
+                           + '    <div class=\'col-md-5 col-md-offset-1\'>'
+                           + '        <div data-element=\'contig_gc_hist\'></div>'
+                           + '    </div>'
+                           + '    <div class=\'col-md-5\'>'
+                           + '        <div data-element=\'contig_lengths_hist\'></div>'
+                           + '    </div>'
+                           + '</div>'
+                           + '<div class=\'row\'>'
+                           + '    <div class=\'col-md-5 col-md-offset-1\'>'
+                           + '        <div data-element=\'contig_gc_vs_length\'></div>'
+                           + '    </div>'
+                           + '    <div class=\'col-md-5\'>'
+                           + '        <div data-element=\'nx_plot\'></div>'
+                           + '    </div>'
+                           + '</div>',
+                    annotations: '<div class=\'row\'>'
+                               + '    <div data-element=\'linked_annotations\'></div>'
+                               + '</div>',
+                    taxons: '<div class=\'row\'>'
+                          + '    <div data-element=\'linked_taxons\'></div>'
+                          + '</div>'
                 };
 
                 
@@ -78,7 +78,7 @@ define([
                 // All the plots in a list
                 var plots= [
                     {
-                        div: container.querySelector("div[data-element='contig_lengths_hist']"),
+                        div: container.querySelector('div[data-element=\'contig_lengths_hist\']'),
                         layout: {
                             title: '<b>Contig Length Distribution</b>',
                             fontsize: 24,
@@ -92,7 +92,7 @@ define([
                         }]
                     },
                     {
-                        div: container.querySelector("div[data-element='contig_gc_hist']"),
+                        div: container.querySelector('div[data-element=\'contig_gc_hist\']'),
                         layout: {
                             title: '<b>Contig GC% Distribution</b>',
                             fontsize: 24,
@@ -152,7 +152,7 @@ define([
                     },
                     */
                     {
-                        div: container.querySelector("div[data-element='contig_gc_vs_length']"),
+                        div: container.querySelector('div[data-element=\'contig_gc_vs_length\']'),
                         layout: {
                             title: '<b>GC by Contig Length</b>',
                             fontsize: 24,
@@ -174,7 +174,7 @@ define([
                         }]
                     },
                     {
-                        div: container.querySelector("div[data-element='nx_plot']"),
+                        div: container.querySelector('div[data-element=\'nx_plot\']'),
                         layout: {
                             title: '<b>N(x) Length</b>',
                             fontsize: 24,
@@ -209,7 +209,7 @@ define([
                 ];
 
                 _.each(plots, function(o) {
-                    o.div.innerHTML = "";
+                    o.div.innerHTML = '';
                     plotly.newPlot(o.div, o.data, o.layout);
                 });
             }
@@ -236,7 +236,7 @@ define([
                 container.querySelector('div[id="overview"]').innerHTML = templates.overview;
                 container.querySelector('div[id="quality"]').innerHTML = templates.quality;
  
-                Array.from(container.querySelectorAll("[data-element]")).forEach(function (e) {
+                Array.from(container.querySelectorAll('[data-element]')).forEach(function (e) {
                     e.innerHTML = html.loading();
                 });
                 
