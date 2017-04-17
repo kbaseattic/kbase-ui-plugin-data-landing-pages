@@ -1,37 +1,36 @@
 {
-  "name": "kbase-ui-plugin-data-landing-pages",
-  "description": "Widgets to support landing page views for the data api",
-  "author": [
-    "kbase"
-  ],
-  "keywords": [
-    "kbase",
-    "ui",
-    "plugin"
-  ],
-  "moduleType": "kbase-ui-plugin",
-  "main": "src/plugin/config.yml",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/kbase/kbase-ui-plugin-data-landing-pages"
-  },
-  "dependencies": {
-    "jquery": "^2.1.4",
-    "bluebird": "^3.0.0",
-    "bootstrap": "^3.3.0",
-    "datatables": "^1.10.9",
-    "datatables-bootstrap3-plugin": "^0.4.0",
-    "numeral": "^1.5.0",
-    "handlebars": "^4.0.3",
-    "plotly": "^1.5.1",
-    "kbase-common-js": "^1.0.0",
-    "kbase-ui-widget": "^1.0.0",
-    "kbase-service-clients-js": "^1.0.0",
-    "kbase-data-api-client-js": "^1.0.2"
-  },
-  "devDependencies": {},
-  "ignore": [
-    ".gitignore"
-  ],
-  "license": "SEE LICENSE IN LICENSE"
+    "name": "kbase-ui-plugin-data-landing-pages",
+    "description": "Widgets to support landing page views for the data api",
+    "author": [
+        "kbase"
+    ],
+    "keywords": [
+        "kbase",
+        "ui",
+        "plugin"
+    ],
+    "moduleType": "kbase-ui-plugin",
+    "main": "src/plugin/config.yml",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/kbase/kbase-ui-plugin-data-landing-pages"
+    },
+    "dependencies": {
+        "jquery": "^2.1.4",
+        "bluebird": "^3.0.0",
+        "bootstrap": "^3.3.0",
+        "datatables": "^1.10.9",
+        "datatables-bootstrap3-plugin": "^0.4.0",
+        "numeral": "^1.5.0",
+        "handlebars": "^4.0.3",
+        "plotly": "^1.5.1",
+        "kbase-common-js": "^2.5.0",
+        "kbase-ui-widget": "^1.0.0",
+        "kbase-service-clients-js": "^3.0.0"
+    },
+    "devDependencies": {},
+    "ignore": [
+        ".gitignore"
+    ],
+    "license": "SEE LICENSE IN LICENSE"
 }
