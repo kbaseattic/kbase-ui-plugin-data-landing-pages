@@ -25,8 +25,7 @@
         "handlebars": "^4.0.3",
         "plotly": "^1.5.1",
         "kbase-common-js": "^2.5.0",
-        "kbase-ui-widget": "^1.0.0",
-        "kbase-service-clients-js": "^3.0.0"
+        "kbase-ui-widget": "^1.0.0"
     },
     "devDependencies": {},
     "ignore": [
