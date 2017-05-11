@@ -68,7 +68,9 @@ define([
 
             function intcmp(a, b) { return (a < b) ? -1 : ((a > b) ? 1 : 0); }
 
-            function renderPlots(contig_ids, gc, lengths, nxlen) {
+            // XXX - the renderPlots function is no longer actually used, since the statistics are disabled.
+            // leaving in, but commented out, for ease of restoration later.
+            /*function renderPlots(contig_ids, gc, lengths, nxlen) {
                 // Common settings
                 var marker_color = '#1C77B5',
                     nx_keys = _.map(_.keys(nxlen), function(key) { return key * 1; }),
@@ -152,7 +154,8 @@ define([
                             }
                         }
                     },
-                    */
+                    // THIS WAS A NESTED COMMENT. UN-NEST IT IF YOU RE-ENABLE renderPlots().
+                    * /
                     {
                         div: container.querySelector('div[data-element=\'contig_gc_vs_length\']'),
                         layout: {
@@ -214,7 +217,7 @@ define([
                     o.div.innerHTML = '';
                     plotly.newPlot(o.div, o.data, o.layout);
                 });
-            }
+            } */
 
 
             // WIDGET API
@@ -266,7 +269,8 @@ define([
                 var contig_lengths;
                 var contigs_gc;
 
-                var plotDataCalls = [];
+                // XXX - commenting out the Assembly Statistics, just in case we want to put 'em back in quickly
+                /*var plotDataCalls = [];
                 plotDataCalls.push(
                     assemblyClient.get_contig_ids(assemblyRef)
                         .then(function(ids) {
@@ -296,6 +300,7 @@ define([
                     .catch(function(err) {
                         console.error(err);
                     });
+                */
             }
 
             function stop() {
