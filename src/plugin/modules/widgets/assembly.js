@@ -19,12 +19,13 @@ define([
             var parent, container, runtime = config.runtime,
                 div = html.tag('div'),
                 templates = {
-                    overview: 
+                    overview:
                           '<div class=\'row\'>'
                         + '    <div class=\'col-md-12 overview-content\'>'
                         + '    </div>'
                         + '</div>',
-                    quality: '<div class=\'row\'>'
+                    // XXX - commenting out the Assembly Statistics, just in case we want to put 'em back in quickly
+                    /*quality: '<div class=\'row\'>'
                            + '    <div class=\'col-md-5 col-md-offset-1\'>'
                            + '        <div data-element=\'contig_gc_hist\'></div>'
                            + '    </div>'
@@ -39,7 +40,7 @@ define([
                            + '    <div class=\'col-md-5\'>'
                            + '        <div data-element=\'nx_plot\'></div>'
                            + '    </div>'
-                           + '</div>',
+                           + '</div>',*/
                     annotations: '<div class=\'row\'>'
                                + '    <div data-element=\'linked_annotations\'></div>'
                                + '</div>',
@@ -48,7 +49,7 @@ define([
                           + '</div>'
                 };
 
-                
+
             // VIEW
 
             function layout() {
@@ -57,16 +58,19 @@ define([
                         title: 'Assembly Summary',
                         content: div({id: 'overview'}, html.loading())
                     }),
-                    html.makePanel({
+                    // XXX - commenting out the Assembly Statistics, just in case we want to put 'em back in quickly
+                    /*html.makePanel({
                         title: 'Assembly Statistics',
                         content: div({id: 'quality'}, html.loading())
-                    })                    
+                    })*/
                 ]);
             }
 
             function intcmp(a, b) { return (a < b) ? -1 : ((a > b) ? 1 : 0); }
 
-            function renderPlots(contig_ids, gc, lengths, nxlen) {
+            // XXX - the renderPlots function is no longer actually used, since the statistics are disabled.
+            // leaving in, but commented out, for ease of restoration later.
+            /*function renderPlots(contig_ids, gc, lengths, nxlen) {
                 // Common settings
                 var marker_color = '#1C77B5',
                     nx_keys = _.map(_.keys(nxlen), function(key) { return key * 1; }),
@@ -150,7 +154,8 @@ define([
                             }
                         }
                     },
-                    */
+                    // THIS WAS A NESTED COMMENT. UN-NEST IT IF YOU RE-ENABLE renderPlots().
+                    * /
                     {
                         div: container.querySelector('div[data-element=\'contig_gc_vs_length\']'),
                         layout: {
@@ -212,8 +217,8 @@ define([
                     o.div.innerHTML = '';
                     plotly.newPlot(o.div, o.data, o.layout);
                 });
-            }
-            
+            } */
+
 
             // WIDGET API
 
@@ -232,14 +237,15 @@ define([
                  *   objectVersion
                  *   ...
                  */
-                
+
                 container.querySelector('div[id="overview"]').innerHTML = templates.overview;
-                container.querySelector('div[id="quality"]').innerHTML = templates.quality;
- 
+                // XXX - commenting out the Assembly Statistics, just in case we want to put 'em back in quickly
+                //container.querySelector('div[id="quality"]').innerHTML = templates.quality;
+
                 Array.from(container.querySelectorAll('[data-element]')).forEach(function (e) {
                     e.innerHTML = html.loading();
                 });
-                
+
                 // get the assembly reference
                 var assemblyRef = utils.getRef(params);
 
@@ -263,7 +269,8 @@ define([
                 var contig_lengths;
                 var contigs_gc;
 
-                var plotDataCalls = [];
+                // XXX - commenting out the Assembly Statistics, just in case we want to put 'em back in quickly
+                /*var plotDataCalls = [];
                 plotDataCalls.push(
                     assemblyClient.get_contig_ids(assemblyRef)
                         .then(function(ids) {
@@ -293,6 +300,7 @@ define([
                     .catch(function(err) {
                         console.error(err);
                     });
+                */
             }
 
             function stop() {
@@ -301,10 +309,10 @@ define([
 
             function detach() {
                 // nothing to do necessarily, since the parent dom node will
-                // be removed the controller for this widget removes it, 
+                // be removed the controller for this widget removes it,
                 // but it is nice to take responsibility for undoing what we
                 // changed in the parent node:
-                
+
                 if (parent && container) {
                     container.innerHTML = '';
                     parent.removeChild(container);
