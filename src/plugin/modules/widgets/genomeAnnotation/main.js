@@ -71,8 +71,6 @@ define([
         return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     }
 
-
-
     function factory(config) {
         var width = 1150;
         var lastElemTabNum = 0;
@@ -379,19 +377,19 @@ define([
 
             // get info from metadata
             genomeApi.callFunc('get_genome_v1', [{
-                genomes: [{
-                    ref: genomeRef
-                }],
-                no_data: 1
-            }])
-            .then(function (data) {
-                console.log('HERE', data);
-                container.innerHTML = 'ta da!';
-                // return normalizeGenomeDataFromQuery(data['genomes'][0]);
-            })
-            .catch(function (err) {
-                renderError(err);
-            });
+                    genomes: [{
+                        ref: genomeRef
+                    }],
+                    no_data: 1
+                }])
+                .then(function (data) {
+                    console.log('HERE', data);
+                    container.innerHTML = 'ta da!';
+                    // return normalizeGenomeDataFromQuery(data['genomes'][0]);
+                })
+                .catch(function (err) {
+                    renderError(err);
+                });
 
             return this;
         }
@@ -408,7 +406,7 @@ define([
         }
 
         function start(params) {
-            genomeRef =  utils.getRef(params);
+            genomeRef = utils.getRef(params);
             container.innerHTML = 'Genome Annotation Here';
             // return render();
         }
@@ -416,7 +414,7 @@ define([
         function stop() {
             return Promise.try(function () {
                 // nothing?
-                
+
             });
         }
 
