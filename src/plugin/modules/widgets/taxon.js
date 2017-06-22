@@ -1,27 +1,30 @@
-/*global define */
-/*jslint white: true, browser: true */
 define([
     'bluebird',
     'jquery',
     'underscore',
     'kb_common/html',
-    'kb_sdk_clients/GenomeAnnotationAPI/dev/GenomeAnnotationAPIClient',
-    'kb_sdk_clients/TaxonAPI/dev/TaxonAPIClient',
-    'kb_sdk_clients/AssemblyAPI/dev/AssemblyAPIClient',
+    'kb_common/bootstrapUtils',
+    'kb_common/jsonRpc/dynamicServiceClient',
+    // 'kb_sdk_clients/GenomeAnnotationAPI/dev/GenomeAnnotationAPIClient',
+    // 'kb_sdk_clients/TaxonAPI/dev/TaxonAPIClient',
+    // 'kb_sdk_clients/AssemblyAPI/dev/AssemblyAPIClient',
     'kb_service/client/workspace',
     '../utils',
     'datatables',
     'datatables_bootstrap'
-], function (
+], function(
     Promise,
     $,
     _,
     html,
-    GenomeAnnotation,
-    Taxon,
-    Assembly,
+    BS,
+    DynamicServiceClient,
+    // GenomeAnnotation,
+    // Taxon,
+    // Assembly,
     Workspace,
-    utils) {
+    utils
+) {
     'use strict';
 
     //http://localhost:8080/#dataview/1779/1006539/1
@@ -123,7 +126,7 @@ define([
                 i,
                 len = decorated_children.length,
                 sorted_children = decorated_children.sort(
-                    function (a, b) {
+                    function(a, b) {
                         return a['scientific_name'].toLowerCase() > b['scientific_name'].toLowerCase();
                     });
 
@@ -208,7 +211,7 @@ define([
                 scientific_name,
                 wikiInfo;
 
-            Array.from(container.querySelectorAll('[data-element]')).forEach(function (e) {
+            Array.from(container.querySelectorAll('[data-element]')).forEach(function(e) {
                 e.innerHTML = html.loading();
             });
 
@@ -225,17 +228,17 @@ define([
             function fetchWikipediaEntry(name) {
                 //console.debug('fetchWikipediaEntry name="' + name + '"');
                 return fetchWikipediaData(name)
-                    .then(function (data) {
+                    .then(function(data) {
                         return fetchWikipediaImage(data);
                     })
-                    .catch(function (err) {
+                    .catch(function(err) {
                         console.error('while fetching wikipedia entry for "' + name + '":', err);
                         return false;
                     });
             }
 
             function encodeQuery(query) {
-                return Object.keys(query).map(function (key) {
+                return Object.keys(query).map(function(key) {
                     return [key, query[key]].map(encodeURIComponent).join('=');
                 }).join('&');
             }
@@ -258,23 +261,23 @@ define([
                 var wiki_request_url = wiki_api_url + '?' + encodeQuery(query);
 
                 return Promise.resolve($.ajax({
-                    url: wiki_request_url,
-                    // data: { format: 'json' },
-                    dataType: 'jsonp'
-                }))
-                .then(function (data) {
-                    // If nothing was found, try stripping the last token and
-                    // re-issuing the query.
-                    if (data.query.search.length == 0) {
-                        var name2 = removeLastToken(name);
-                        //console.debug('Stripped scientific name "' + name + '" down to "' + name2 + '"');
-                        if (name2 == '') {
-                            throw new Error('No page found on Wikipedia for "' + name2 + '"');
+                        url: wiki_request_url,
+                        // data: { format: 'json' },
+                        dataType: 'jsonp'
+                    }))
+                    .then(function(data) {
+                        // If nothing was found, try stripping the last token and
+                        // re-issuing the query.
+                        if (data.query.search.length == 0) {
+                            var name2 = removeLastToken(name);
+                            //console.debug('Stripped scientific name "' + name + '" down to "' + name2 + '"');
+                            if (name2 == '') {
+                                throw new Error('No page found on Wikipedia for "' + name2 + '"');
+                            }
+                            data = fetchWikipediaData(name2);
                         }
-                        data = fetchWikipediaData(name2);
-                    }
-                    return data;
-                });
+                        return data;
+                    });
             }
 
             /**
@@ -307,7 +310,7 @@ define([
                         url: wiki_request_url, // + "&callback=?",
                         // data: { format: 'json' },
                         dataType: 'jsonp'
-                    }).then(function (data) {
+                    }).then(function(data) {
                         //console.debug('Images callback, data:', data);
                         var pageid = data.query.pageids[0];
                         return {
@@ -316,7 +319,7 @@ define([
                             link: data.query.pages[pageid].fullurl
                         };
                     })
-                ).catch(function (err) {
+                ).catch(function(err) {
                     if (err.status === 404) {
                         // do nothing 
                     } else {
@@ -361,30 +364,37 @@ define([
                     wiki_request_url = wiki_api_url + '?' + encodeQuery(queryParams);
 
                 return Promise.resolve($.ajax({
-                    url: wiki_request_url,
-                    // data: { format: 'json' },
-                    dataType: 'jsonp'
-                }))
-                .then(function (data) {
-                    //console.debug("FetchWikipediaImage data:",data);
-                    var pageid = data.query.pageids[0];
-                    return data.query.pages[pageid].thumbnail.source;
-                })
-                .catch(function (err) {
-                    console.error('while fetching wikipedia image at "' + wiki_request_url + '":', err);
-                    return null;
-                });
+                        url: wiki_request_url,
+                        // data: { format: 'json' },
+                        dataType: 'jsonp'
+                    }))
+                    .then(function(data) {
+                        //console.debug("FetchWikipediaImage data:",data);
+                        var pageid = data.query.pageids[0];
+                        return data.query.pages[pageid].thumbnail.source;
+                    })
+                    .catch(function(err) {
+                        console.error('while fetching wikipedia image at "' + wiki_request_url + '":', err);
+                        return null;
+                    });
             }
-
 
             function getTaxonClient() {
-                return new Taxon({
-                    url: runtime.getConfig('services.service_wizard.url'),
-                    auth: { token: runtime.service('session').getAuthToken() },
-                    version: 'release'
+                return new DynamicServiceClient({
+                    url: runtime.config('services.service_wizard.url'),
+                    token: runtime.service('session').getAuthToken(),
+                    module: 'TaxonAPI'
                 });
             }
 
+            function renderError(node, error) {
+                console.log('rendering error', node, error);
+                node.innerHTML = BS.buildPanel({
+                    type: 'danger',
+                    title: 'Error',
+                    body: error.message
+                });
+            }
 
             var taxon = getTaxonClient();
             var loadingCalls = [];
@@ -392,9 +402,11 @@ define([
             var scientificName;
 
             // Call 1: do most the work, and kick off the scientific lineage + wikipedia fetching
-            loadingCalls.push(
-                taxon.get_all_data({ ref: taxon_ref, exclude_children: 1 })
-                .then(function (data) {
+            loadingCalls.push(taxon.callFunc('get_all_data', [{
+                    ref: taxon_ref,
+                    exclude_children: 1
+                }])
+                .spread(function(data) {
                     scientificName = data['scientific_name'];
 
                     setDataElementHTML('scientific-name', scientificName);
@@ -406,14 +418,14 @@ define([
 
                     renderAliases(data['aliases']);
 
-                    return taxon.get_decorated_scientific_lineage({ ref: taxon_ref });
+                    return taxon.callFunc('get_decorated_scientific_lineage', [{ ref: taxon_ref }]);
                 })
-                .then(function (lineage) {
+                .spread(function(lineage) {
                     renderLineage(lineage.decorated_scientific_lineage, scientificName);
 
                     return fetchWikipediaEntry(scientificName);
                 })
-                .then(function (wiki_content) {
+                .then(function(wiki_content) {
                     wikiInfo = wiki_content;
                     if (wikiInfo === false) {
                         //console.debug('No wikiInfo');
@@ -424,26 +436,29 @@ define([
                     }
                     return fetchWikipediaImageURL(wikiInfo.image);
                 })
-                .then(function (wikiImage) {
+                .then(function(wikiImage) {
                     if (wikiImage === null) {
                         renderWikipediaImage(null);
                     } else {
                         renderWikipediaImage(wikiImage);
                     }
+                })
+                .catch(function(err) {
+                    renderError(document.getElementById('overview'), err);
+                    renderError(document.getElementById('moreTaxonInfo'), err);
                 }));
 
             // Call 3: get the decorated children
-            loadingCalls.push(
-                taxon.get_decorated_children({ ref: taxon_ref })
-                .then(function (lineage) {
+            loadingCalls.push(taxon.callFunc('get_decorated_children', [{ ref: taxon_ref }])
+                .spread(function(lineage) {
                     renderChildren(lineage.decorated_children);
                 })
-                .catch(function (err) {
-                    container.querySelector('div[id="taxonChildren"]').innerHTML = buildError(err);
+                .catch(function(err) {
+                    renderError(document.getElementById('taxonChildren'), err);
                 }));
 
             return Promise.all(loadingCalls)
-                .catch(function (err) {
+                .catch(function(err) {
                     console.error(err);
                 });
         }
@@ -472,7 +487,7 @@ define([
     }
 
     return {
-        make: function (config) {
+        make: function(config) {
             return factory(config);
         }
     };

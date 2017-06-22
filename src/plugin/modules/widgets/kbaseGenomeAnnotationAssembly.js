@@ -5,117 +5,113 @@ define([
     'datatables',
     'kb_widget/legacy/authenticatedWidget',
     'kb_service/client/workspace',
-    'kb_sdk_clients/AssemblyAPI/dev/AssemblyAPIClient',
     'kb_common/jsonRpc/dynamicServiceClient',
     'datatables_bootstrap'
-], function (
+], function(
     $,
     Promise,
     bootstrap,
     jquery_dataTables,
     kbaseAuthenticatedWidget,
     Workspace,
-    Assembly,
     DynamicServiceClient
 ) {
     'use strict';
 
     $.KBWidget({
-        name: "kbaseGenomeAnnotationAssembly",
+        name: 'kbaseGenomeAnnotationAssembly',
         parent: kbaseAuthenticatedWidget,
-        version: "1.0.0",
+        version: '1.0.0',
         options: {},
 
         init: function init(options) {
             this._super(options);
 
-            var $self = this;
+            this.runtime = options.runtime;
 
-            $self.runtime = options.runtime;
-
-            if ($self.options.ref) {
-                $self.obj_ref = $self.options.ref;
+            if (this.options.ref) {
+                this.obj_ref = this.options.ref;
             } else {
-                $self.obj_ref = $self.options.wsNameOrId + '/' + $self.options.objNameOrId;
+                this.obj_ref = this.options.wsNameOrId + '/' + this.options.objNameOrId;
             }
-            $self.link_ref = $self.obj_ref;
+            this.link_ref = this.obj_ref;
 
-            $self.AssemblyClient = new DynamicServiceClient({
-                url: $self.runtime.getConfig('services.service_wizard.url'),
-                token: $self.runtime.service('session').getAuthToken(),
-                version: 'release',
+            this.AssemblyClient = new DynamicServiceClient({
+                url: this.runtime.getConfig('services.service_wizard.url'),
+                token: this.runtime.service('session').getAuthToken(),
                 module: 'AssemblyAPI'
             });
 
-            // $self.assembly = new Assembly({
-            //     url: $self.runtime.getConfig('services.service_wizard.url'),
-            //     auth: { 'token': $self.runtime.service('session').getAuthToken() },
+            // this.assembly = new Assembly({
+            //     url: this.runtime.getConfig('services.service_wizard.url'),
+            //     auth: { 'token': this.runtime.service('session').getAuthToken() },
             //     version: 'release'
             // });
-            $self.ws = new Workspace($self.runtime.getConfig('services.workspace.url'), { 'token': $self.runtime.service('session').getAuthToken() });
+            this.ws = new Workspace(this.runtime.getConfig('services.workspace.url'), {
+                token: this.runtime.service('session').getAuthToken()
+            });
 
-            $self.$elem.append($('<div>').attr('align', 'center').append($('<i class="fa fa-spinner fa-spin fa-2x">')));
+            this.$elem.append($('<div>').attr('align', 'center').append($('<i class="fa fa-spinner fa-spin fa-2x">')));
 
             // 1) get stats, and show the panel
             var basicInfoCalls = [];
+            var that = this;
             basicInfoCalls.push(
-                $self.AssemblyClient.callFunc('get_stats', [$self.obj_ref])
-                .then(function (result) {
+                this.AssemblyClient.callFunc('get_stats', [this.obj_ref])
+                .then(function(result) {
                     var stats = result[0];
-                    $self.assembly_stats = stats;
+                    that.assembly_stats = stats;
+                    return null;
                 }));
             basicInfoCalls.push(
-                $self.AssemblyClient.callFunc('get_external_source_info', [$self.obj_ref])
-                .then(function (result) {
+                this.AssemblyClient.callFunc('get_external_source_info', [this.obj_ref])
+                .then(function(result) {
                     var info = result[0];
-                    $self.external_source_info = info;
+                    that.external_source_info = info;
+                    return null;
                 }));
 
             basicInfoCalls.push(
-                $self.ws.get_object_info_new({ objects: [{ 'ref': $self.obj_ref }], includeMetadata: 1 })
-                .then(function (info) {
-                    $self.assembly_obj_info = info[0];
-                    $self.link_ref = info[0][6] + '/' + info[0][1] + '/' + info[0][4];
+                this.ws.get_object_info_new({ objects: [{ 'ref': this.obj_ref }], includeMetadata: 1 })
+                .then(function(info) {
+                    that.assembly_obj_info = info[0];
+                    that.link_ref = info[0][6] + '/' + info[0][1] + '/' + info[0][4];
+                    return null;
                 }));
             Promise.all(basicInfoCalls)
-                .then(function () {
-                    $self.renderBasicTable();
+                .then(function() {
+                    that.renderBasicTable();
                     return null;
                 })
-                .catch(function (err) {
-                    $self.$elem.empty();
-                    $self.$elem.append('Error' + JSON.stringify(err));
+                .catch(function(err) {
+                    that.$elem.empty();
+                    that.$elem.append('Error' + JSON.stringify(err));
                     console.error(err);
                 });
 
             return this;
         },
 
-
-        processContigData: function () {
-            var $self = this;
-
+        processContigData: function() {
             var contig_table = [];
-            for (var id in $self.contig_lengths) {
-                if ($self.contig_lengths.hasOwnProperty(id)) {
+            for (var id in this.contig_lengths) {
+                if (this.contig_lengths.hasOwnProperty(id)) {
                     var gc = 'unknown';
-                    if ($self.contig_lengths.hasOwnProperty(id)) {
-                        gc = String(($self.contig_gc[id] * 100).toFixed(2)) + '%';
+                    if (this.contig_lengths.hasOwnProperty(id)) {
+                        gc = String((this.contig_gc[id] * 100).toFixed(2)) + '%';
                     }
                     var contig = {
                         id: id,
-                        len: '<!--' + $self.contig_lengths[id] + '-->' + String($self.numberWithCommas($self.contig_lengths[id])) + ' bp',
+                        len: '<!--' + this.contig_lengths[id] + '-->' + String(this.numberWithCommas(this.contig_lengths[id])),
                         gc: gc
                     };
                     contig_table.push(contig);
                 }
             }
-            $self.contig_table = contig_table;
+            this.contig_table = contig_table;
         },
 
-
-        renderBasicTable: function () {
-            var $self = this;
+        renderBasicTable: function() {
             var $container = this.$elem;
             $container.empty();
 
@@ -126,51 +122,51 @@ define([
                 return $('<tr>').append($('<td>').append(key)).append($('<td>').append(value));
             }
 
-            $overviewTable.append(get_table_row('Number of Contigs', $self.assembly_stats['num_contigs']));
-            $overviewTable.append(get_table_row('Total GC Content', String(($self.assembly_stats['gc_content'] * 100).toFixed(2)) + '%'));
-            $overviewTable.append(get_table_row('Total Length', String($self.numberWithCommas($self.assembly_stats['dna_size'])) + ' bp'));
+            $overviewTable.append(get_table_row('Number of Contigs', this.assembly_stats['num_contigs']));
+            $overviewTable.append(get_table_row('Total GC Content', String((this.assembly_stats['gc_content'] * 100).toFixed(2)) + '%'));
+            $overviewTable.append(get_table_row('Total Length', String(this.numberWithCommas(this.assembly_stats['dna_size'])) + ' bp'));
 
-            $overviewTable.append(get_table_row('External Source', $self.external_source_info['external_source']));
-            $overviewTable.append(get_table_row('External Source ID', $self.external_source_info['external_source_id']));
-            $overviewTable.append(get_table_row('Source Origination Date', $self.external_source_info['external_source_origination_date']));
+            $overviewTable.append(get_table_row('External Source', this.external_source_info['external_source']));
+            $overviewTable.append(get_table_row('External Source ID', this.external_source_info['external_source_id']));
+            $overviewTable.append(get_table_row('Source Origination Date', this.external_source_info['external_source_origination_date']));
 
 
             // add the stuff
             $container.append($('<div>').append($overviewTable));
-            $container.append($('<div>').append( $self.addContigList()));
+            $container.append($('<div>').append(this.addContigList()));
         },
 
-        addContigList: function () {
-            var $self = this;
+        addContigList: function() {
+            var that = this;
             var $content = $('<div>');
-            $self.$contigTablePanel = $content;
+            this.$contigTablePanel = $content;
 
             // Get contig lengths and gc, render the table
 
-            $self.assembly_stats = {};
-            $self.contig_lengths = [];
-            $self.contig_gc = [];
+            this.assembly_stats = {};
+            this.contig_lengths = [];
+            this.contig_gc = [];
 
             var loadingCalls = [];
             loadingCalls.push(
-                $self.AssemblyClient.callFunc('get_contig_lengths', [this.obj_ref, null])
-                .spread(function (lengths) {
-                    $self.contig_lengths = lengths;
+                this.AssemblyClient.callFunc('get_contig_lengths', [this.obj_ref, null])
+                .spread(function(lengths) {
+                    that.contig_lengths = lengths;
                 }));
             loadingCalls.push(
-                $self.AssemblyClient.callFunc('get_contig_gc_content', [this.obj_ref, null])
-                .spread(function (gc) {
-                    $self.contig_gc = gc;
+                this.AssemblyClient.callFunc('get_contig_gc_content', [this.obj_ref, null])
+                .spread(function(gc) {
+                    that.contig_gc = gc;
                 }));
 
             Promise.all(loadingCalls)
-                .then(function () {
-                    $self.processContigData();
+                .then(function() {
+                    that.processContigData();
 
                     // sort extension for length- is there a better way?
                     if (!$.fn.dataTableExt.oSort['genome-annotation-assembly-hidden-number-stats-pre']) {
                         $.extend($.fn.dataTableExt.oSort, {
-                            "genome-annotation-assembly-hidden-number-stats-pre": function (a) {
+                            'genome-annotation-assembly-hidden-number-stats-pre': function(a) {
                                 // extract out the first comment if it exists, then parse as number
                                 var t = a.split('-->');
                                 if (t.length > 1) {
@@ -181,10 +177,10 @@ define([
                                 }
                                 return Number(a);
                             },
-                            "genome-annotation-assembly-hidden-number-stats-asc": function (a, b) {
+                            'genome-annotation-assembly-hidden-number-stats-asc': function(a, b) {
                                 return ((a < b) ? -1 : ((a > b) ? 1 : 0));
                             },
-                            "genome-annotation-assembly-hidden-number-stats-desc": function (a, b) {
+                            'genome-annotation-assembly-hidden-number-stats-desc': function(a, b) {
                                 return ((a < b) ? 1 : ((a > b) ? -1 : 0));
                             }
                         });
@@ -195,36 +191,36 @@ define([
 
                     var contigsPerPage = 10;
                     var sDom = 'lft<ip>';
-                    if ($self.contig_table.length < contigsPerPage) {
+                    if (that.contig_table.length < contigsPerPage) {
                         sDom = 'fti';
                     }
 
                     var contigsSettings = {
-                        "bFilter": true,
-                        "sPaginationType": "full_numbers",
-                        "iDisplayLength": contigsPerPage,
-                        "aaSorting": [
-                            [1, "desc"]
+                        'bFilter': true,
+                        'sPaginationType': 'full_numbers',
+                        'iDisplayLength': contigsPerPage,
+                        'aaSorting': [
+                            [1, 'desc']
                         ],
 
-                        "sDom": sDom,
+                        'sDom': sDom,
 
-                        "columns": [
-                            { sTitle: 'Contig Id', data: "id" },
-                            { sTitle: "Length", data: "len" },
-                            { sTitle: "GC Content", data: "gc" }
+                        'columns': [
+                            { sTitle: 'Contig Id', data: 'id' },
+                            { sTitle: 'Length (bp)', data: 'len' },
+                            { sTitle: 'GC Content', data: 'gc' }
                         ],
-                        "columnDefs": [
-                            { "type": "genome-annotation-assembly-hidden-number-stats", targets: [1] }
+                        'columnDefs': [
+                            { 'type': 'genome-annotation-assembly-hidden-number-stats', targets: [1] }
                         ],
-                        "data": $self.contig_table,
-                        "language": {
-                            "lengthMenu": "_MENU_ Contigs per page",
-                            "zeroRecords": "No Matching Contigs Found",
-                            "info": "Showing _START_ to _END_ of _TOTAL_ Contigs",
-                            "infoEmpty": "No Contigs",
-                            "infoFiltered": "(filtered from _MAX_)",
-                            "search": "Search Contigs"
+                        'data': that.contig_table,
+                        'language': {
+                            'lengthMenu': '_MENU_ Contigs per page',
+                            'zeroRecords': 'No Matching Contigs Found',
+                            'info': 'Showing _START_ to _END_ of _TOTAL_ Contigs',
+                            'infoEmpty': 'No Contigs',
+                            'infoFiltered': '(filtered from _MAX_)',
+                            'search': 'Search Contigs'
                         }
                     };
                     $content.empty();
@@ -232,10 +228,10 @@ define([
                     $table.dataTable(contigsSettings);
                     return null;
                 })
-                .catch(function (err) {
+                .catch(function(err) {
                     $content.empty();
                     $content.append('Error' + JSON.stringify(err));
-                    console.error($self);
+                    console.error(that);
                     console.error(err);
                 });
 
@@ -243,14 +239,14 @@ define([
         },
 
         appendUI: function appendUI($elem) {
-            $elem.append("One day, there will be a widget here.")
+            $elem.append('One day, there will be a widget here.')
         },
 
-        numberWithCommas: function (x) {
+        numberWithCommas: function(x) {
             //var parts = x.toString().split(".");
             //parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
             //return parts.join(".");
-            return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
 
     });
