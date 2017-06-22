@@ -7,7 +7,7 @@ define([
     '../utils',
     '../widgets/kbaseGenomeAnnotationAssembly',
     'plotly'
-], function(
+], function (
     $,
     Promise,
     US,
@@ -59,11 +59,12 @@ define([
                 html.makePanel({
                     title: 'Assembly Summary',
                     content: div({ id: 'overview' }, html.loading())
-                }),
-                html.makePanel({
-                    title: 'Assembly Statistics',
-                    content: div({ id: 'quality' }, html.loading())
                 })
+                // Disable statistics
+                // html.makePanel({
+                //     title: 'Assembly Statistics',
+                //     content: div({ id: 'quality' }, html.loading())
+                // })
             ]);
         }
 
@@ -72,14 +73,14 @@ define([
         function renderPlots(contig_ids, gc, lengths, nxlen) {
             // Common settings
             var marker_color = '#1C77B5',
-                nx_keys = Object.keys(nxlen).map(function(key) { return key * 1; }),
-                length_pairs = Object.keys(lengths).map(function(key) {
+                nx_keys = Object.keys(nxlen).map(function (key) { return key * 1; }),
+                length_pairs = Object.keys(lengths).map(function (key) {
                     return [key, lengths[key]];
                 });
             // sort Nx keys
             nx_keys.sort(intcmp);
             // Sort length_pairs by second element (the length)
-            length_pairs.sort(function(p1, p2) { return intcmp(p1[1], p2[1]); });
+            length_pairs.sort(function (p1, p2) { return intcmp(p1[1], p2[1]); });
             // All the plots in a list
             //{
             //    div: container.querySelector("div[data-element='contig_lengths_scatter']"),
@@ -131,7 +132,7 @@ define([
                     yaxis: { title: '<b>Count</b>' }
                 },
                 data: [{
-                    x: Object.keys(lengths).map(function(id) { return lengths[id]; }),
+                    x: Object.keys(lengths).map(function (id) { return lengths[id]; }),
                     type: 'histogram',
                     marker: { line: { width: 1, color: 'rgb(255,255,255)' } }
                 }]
@@ -144,7 +145,7 @@ define([
                     yaxis: { title: '<b>Count</b>' }
                 },
                 data: [{
-                    x: Object.keys(gc).map(function(key) {
+                    x: Object.keys(gc).map(function (key) {
                         return gc[key] * 100.0;
                     }),
                     text: Object.keys(gc),
@@ -166,10 +167,10 @@ define([
                 data: [{
                     type: 'scatter',
                     mode: 'markers',
-                    x: contig_ids.map(function(id) {
+                    x: contig_ids.map(function (id) {
                         return gc[id] * 100.0;
                     }),
-                    y: contig_ids.map(function(id) {
+                    y: contig_ids.map(function (id) {
                         return lengths[id];
                     }),
                     text: contig_ids,
@@ -194,7 +195,7 @@ define([
                     type: 'scatter',
                     mode: 'lines',
                     x: nx_keys,
-                    y: nx_keys.map(function(key) { return nxlen[key]; }),
+                    y: nx_keys.map(function (key) { return nxlen[key]; }),
                     marker: { color: marker_color },
                     showlegend: false,
                     hoverinfo: 'x+y'
@@ -208,10 +209,54 @@ define([
                 }],
             }];
 
-            plots.forEach(function(o) {
+            plots.forEach(function (o) {
                 o.div.innerHTML = '';
                 plotly.newPlot(o.div, o.data, o.layout);
             });
+        }
+
+        function generatePlots(assemblyRef) {
+            // Show the stats plots
+            var assemblyClient = new DynamicServiceClient({
+                url: runtime.config('services.service_wizard.url'),
+                token: runtime.service('session').getAuthToken(),
+                module: 'AssemblyAPI'
+            });
+
+            var contig_ids;
+            var contig_lengths;
+            var contigs_gc;
+
+            var plotDataCalls = [];
+            plotDataCalls.push(
+                assemblyClient.callFunc('get_contig_ids', [assemblyRef])
+                .spread(function (ids) {
+                    contig_ids = ids;
+                })
+            );
+            plotDataCalls.push(
+                assemblyClient.callFunc('get_contig_lengths', [assemblyRef, null])
+                .spread(function (lengths) {
+                    contig_lengths = lengths;
+                })
+            );
+            plotDataCalls.push(
+                assemblyClient.callFunc('get_contig_gc_content', [assemblyRef, null])
+                .spread(function (gc) {
+                    contigs_gc = gc;
+                })
+            );
+
+            // Get all the data at the same time
+            return Promise.all(plotDataCalls)
+                .then(function () {
+                    var contig_length_values = US.values(contig_lengths);
+                    var nx_values = utils.nx(contig_length_values, US.range(1, 101, 1));
+                    renderPlots(contig_ids, contigs_gc, contig_lengths, nx_values);
+                })
+                .catch(function (err) {
+                    console.error(err);
+                });
         }
 
         // WIDGET API
@@ -233,9 +278,11 @@ define([
              */
 
             container.querySelector('div[id="overview"]').innerHTML = templates.overview;
-            container.querySelector('div[id="quality"]').innerHTML = templates.quality;
 
-            Array.from(container.querySelectorAll('[data-element]')).forEach(function(e) {
+            // Disable stats plots
+            // container.querySelector('div[id="quality"]').innerHTML = templates.quality;
+
+            Array.from(container.querySelectorAll('[data-element]')).forEach(function (e) {
                 e.innerHTML = html.loading();
             });
 
@@ -251,47 +298,8 @@ define([
             });
             $overviewDiv.append($assemblySummaryWidgetDiv);
 
-            // Show the stats plots
-            var assemblyClient = new DynamicServiceClient({
-                url: runtime.config('services.service_wizard.url'),
-                token: runtime.service('session').getAuthToken(),
-                module: 'AssemblyAPI'
-            });
-
-            var contig_ids;
-            var contig_lengths;
-            var contigs_gc;
-
-            var plotDataCalls = [];
-            plotDataCalls.push(
-                assemblyClient.callFunc('get_contig_ids', [assemblyRef])
-                .spread(function(ids) {
-                    contig_ids = ids;
-                })
-            );
-            plotDataCalls.push(
-                assemblyClient.callFunc('get_contig_lengths', [assemblyRef, null])
-                .spread(function(lengths) {
-                    contig_lengths = lengths;
-                })
-            );
-            plotDataCalls.push(
-                assemblyClient.callFunc('get_contig_gc_content', [assemblyRef, null])
-                .spread(function(gc) {
-                    contigs_gc = gc;
-                })
-            );
-
-            // Get all the data at the same time
-            return Promise.all(plotDataCalls)
-                .then(function() {
-                    var contig_length_values = US.values(contig_lengths);
-                    var nx_values = utils.nx(contig_length_values, US.range(1, 101, 1));
-                    renderPlots(contig_ids, contigs_gc, contig_lengths, nx_values);
-                })
-                .catch(function(err) {
-                    console.error(err);
-                });
+            // Disable statistics plots
+            // return generatePlots(assemblyRef);
         }
 
         function stop() {
@@ -319,7 +327,7 @@ define([
     }
 
     return {
-        make: function(config) {
+        make: function (config) {
             return factory(config);
         }
     };
