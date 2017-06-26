@@ -13,7 +13,15 @@ define([
         input = t('input'),
         button = t('button'),
         label = t('label'),
-        select = t('select');
+        select = t('select'),
+        table = t('table'),
+        colgroup = t('colgroup'),
+        col = t('col'),
+        thead = t('thead'),
+        tbody = t('tbody'),
+        tr = t('tr'),
+        th = t('th'),
+        td = t('td');
 
     function viewModel(params) {
         var columns = params.table.columns;
@@ -31,21 +39,24 @@ define([
             }
         });
 
-        var rawTable = params.table.rows.map(function (row) {
-            return row.map(function (value, index) {
-                var formatted;
-                var col = columns[index];
-                if (col.format) {
-                    formatted = col.format(value);
-                } else {
-                    formatted = value;
-                }
-                return {
-                    value: value,
-                    formatted: formatted,
-                    style: col.style
-                };
-            });
+        var rawTable = params.table.rows.map(function (row, rowIndex) {
+            return {
+                naturalOrder: rowIndex,
+                row: row.map(function (value, index) {
+                    var formatted;
+                    var col = columns[index];
+                    if (col.format) {
+                        formatted = col.format(value);
+                    } else {
+                        formatted = value;
+                    }
+                    return {
+                        value: value,
+                        formatted: formatted,
+                        style: col.style
+                    };
+                })
+            };
         });
 
         var table = ko.observableArray(rawTable);
@@ -101,8 +112,8 @@ define([
             var sortColumn = columnMap[sortBy()];
             table.sort(function (a, b) {
                 var comparison;
-                var aValue = a[sortColumn.pos].value;
-                var bValue = b[sortColumn.pos].value;
+                var aValue = a.row[sortColumn.pos].value;
+                var bValue = b.row[sortColumn.pos].value;
                 switch (sortColumn.type) {
                 case 'string':
                 case 'date':
@@ -141,7 +152,7 @@ define([
 
             for (var i in searchColumns) {
                 var searchColumn = searchColumns[i];
-                if (row[searchColumn.pos].value.toLowerCase().indexOf(text) >= 0) {
+                if (row.row[searchColumn.pos].value.toLowerCase().indexOf(text) >= 0) {
                     return true;
                 }
             }
@@ -241,6 +252,14 @@ define([
             }
         }
 
+        function doCancelSort() {
+            sortBy(null);
+            sortDirection(null);
+            table.sort(function (a, b) {
+                return (b.naturalOrder - a.naturalOrder);
+            });
+        }
+
         function getColor(index) {
             var base = index % 7;
             var color = (9 + base).toString(16);
@@ -274,21 +293,55 @@ define([
             sortDirection: sortDirection,
             getColor: getColor,
             username: params.username,
-            currentUsername: params.currentUsername
+            currentUsername: params.currentUsername,
+            doCancelSort: doCancelSort
         };
+    }
+
+    function buildHeaderColumn() {
+        return th(span({
+            dataBind: {
+                click: '$component.doSortByColumn',
+                // style: {
+                //     'color': '$component.sortBy() === name ? "green" : "blue"'
+                // }
+                style: '$data.columnStyle'
+            },
+            style: {
+                cursor: 'pointer'
+            }
+        }, [
+            div([
+                span({
+                    dataBind: {
+                        text: 'label'
+                    }
+                }),
+                span({
+                    dataBind: {
+                        visible: '$component.sortBy() === name',
+                        css: {
+                            'fa-chevron-down': '$component.sortDirection() === "desc"',
+                            'fa-chevron-up': '$component.sortDirection() === "asc"'
+                        }
+                    },
+                    class: 'fa'
+                })
+            ])
+            // div(
+            //     input({
+            //         dataBind: {
+            //             value: 'search'
+            //         }
+            //     })
+            // )
+        ]));
     }
 
     function buildTable() {
         // var headerCellStyle = { display: 'table-cell', fontWeight: 'bold', border: '1px silver solid', padding: '4px' };
         // var cellStyle = { display: 'table-cell', fontWeight: 'normal', border: '1px silver solid', padding: '4px' };
-        var table = t('table'),
-            colgroup = t('colgroup'),
-            col = t('col'),
-            thead = t('thead'),
-            tbody = t('tbody'),
-            tr = t('tr'),
-            th = t('th'),
-            td = t('td');
+
         return table({
             class: 'table',
             // style: {
@@ -296,58 +349,35 @@ define([
             // }
         }, [
             colgroup({
-                dataBind: {
-                    foreach: 'columns'
-                }
-            }, col({
-                dataBind: {
-                    attr: {
-                        width: 'width'
-                    }
-                }
-            })),
-            thead(
-                tr({
-                    dataBind: {
-                        foreach: 'columns'
-                    }
-                }, th(span({
-                    dataBind: {
-                        click: '$component.doSortByColumn',
-                        // style: {
-                        //     'color': '$component.sortBy() === name ? "green" : "blue"'
-                        // }
-                        style: '$data.columnStyle'
-                    },
+
+            }, [
+                col({
                     style: {
-                        cursor: 'pointer'
+                        width: '5em'
                     }
-                }, [
-                    div([
-                        span({
-                            dataBind: {
-                                text: 'label'
-                            }
-                        }),
-                        span({
-                            dataBind: {
-                                visible: '$component.sortBy() === name',
-                                css: {
-                                    'fa-chevron-down': '$component.sortDirection() === "desc"',
-                                    'fa-chevron-up': '$component.sortDirection() === "asc"'
-                                }
-                            },
-                            class: 'fa'
-                        })
-                    ])
-                    // div(
-                    //     input({
-                    //         dataBind: {
-                    //             value: 'search'
-                    //         }
-                    //     })
-                    // )
-                ])))),
+                }),
+                '<!-- ko foreach: columns -->',
+                col({
+                    dataBind: {
+                        attr: {
+                            width: 'width'
+                        }
+                    }
+                }),
+                '<!-- /ko -->'
+            ]),
+            thead(
+                tr([
+                    th({
+                        style: {
+                            fontStyle: 'italic',
+                            color: 'gray'
+                        }
+                    }, '#'),
+                    '<!-- ko foreach: columns -->',
+                    buildHeaderColumn(),
+                    '<!-- /ko -->'
+                ])),
             tbody({
                 style: {
                     maxHeight: '500px'
@@ -356,16 +386,26 @@ define([
                     foreach: 'table'
                 }
             }, tr({
-                dataBind: {
-                    foreach: '$data'
-                }
                 // td({ dataBind: { text: '$index() + $component.pageStart() + 1' } }),
-            }, td({
-                dataBind: {
-                    text: '$data.formatted',
-                    style: '$data.style'
-                }
-            })))
+            }, [
+                td({
+                    dataBind: {
+                        text: '$index() + $component.pageStart() + 1'
+                    },
+                    style: {
+                        fontStyle: 'italic',
+                        color: 'gray'
+                    }
+                }),
+                '<!-- ko foreach: $data.row -->',
+                td({
+                    dataBind: {
+                        text: '$data.formatted',
+                        style: '$data.style'
+                    }
+                }),
+                '<!-- /ko -->'
+            ]))
         ]);
     }
 
@@ -451,6 +491,51 @@ define([
                         class: 'form-control'
                     }),
                     ' rows per page'
+                ])
+            ]),
+            div({
+                class: 'xform-inline',
+                dataBind: {
+                    if: 'sortBy()'
+                },
+                style: {
+                    display: 'inline-block',
+                    marginLeft: '20px'
+                }
+            }, [
+                button({
+                    type: 'button',
+                    class: 'btn btn-danger btn-sm',
+                    dataBind: {
+                        click: 'doCancelSort'
+                    }
+                }, icon('times')),
+                span({
+                    style: {
+                        display: 'inline-block',
+                        verticalAlign: 'middle',
+                        margin: '6px 0 0 4px'
+                    }
+                }, [
+
+                    'sorting by ',
+                    span({
+                        dataBind: {
+                            text: 'sortBy'
+                        },
+                        style: {
+                            fontWeight: 'bold'
+                        }
+                    }),
+                    ' ',
+                    span({
+                        dataBind: {
+                            text: 'sortDirection'
+                        },
+                        style: {
+                            fontWeight: 'bold'
+                        }
+                    })
                 ])
             ]),
             div({ class: 'btn-group form-inline pull-right' }, [

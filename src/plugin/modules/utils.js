@@ -4,6 +4,7 @@ define([
     'kb_common/html'
 ], function (html) {
     'use strict';
+
     function getRef(params) {
         if (params.ref) {
             return params.ref;
@@ -47,19 +48,19 @@ define([
         if (length === undefined) {
             length = true;
         }
-        if (typeof(length) != 'boolean') {
+        if (typeof (length) !== 'boolean') {
             throw new TypeError('length (' + length + ') is not a boolean');
         }
 
         // Calculate total sum of array values, and also
         // for convenience pre-calculate half of that value.
         var total = 0;
-        arr.forEach(function(num){ total += num });
+        arr.forEach(function (num) { total += num; });
 
         // Construct cutoff values for Nx, for each x in `pct`.
         var cutoffs = [];
         pct.sort(intcmp);
-        pct.forEach(function(num){
+        pct.forEach(function (num) {
             if (num < 1 || num > 100) {
                 throw new Error('Nx is not defined for x=' + num);
             }
@@ -68,7 +69,10 @@ define([
 
         // Find all percentiles of cumulative sum of array
         arr.sort(intcmp);
-        var i = arr.length, j=0, n = 0, r = -1;
+        var i = arr.length,
+            j = 0,
+            n = 0,
+            r = -1;
         while (j < cutoffs.length && i > 0) {
             i -= 1;
             n += arr[i];
@@ -78,8 +82,7 @@ define([
                 // average of the two middle values. Otherwise just use the value.
                 if (n == cutoffs[j] && i > 0) {
                     r = length ? (arr[i] + arr[i - 1]) / 2.0 : i - 0.5;
-                }
-                else {
+                } else {
                     r = length ? arr[i] * 1.0 : i;
                 }
                 result[pct[j]] = r;
@@ -97,10 +100,10 @@ define([
 
     // internal test code
     function test_nx() {
-        var a, t0, t1,r;
+        var a, t0, t1, r;
 
-        a = [ 2, 2, 2, 3, 3, 4, 8, 8,]
-        console.log('Lx of', a, 'is', nx(a, [10,50,90]))
+        a = [2, 2, 2, 3, 3, 4, 8, 8, ]
+        console.log('Lx of', a, 'is', nx(a, [10, 50, 90]))
 
         console.log('L1 of', a, 'is', nx(a, [1])['1'], 'and expected to be 8');
         console.log('N99 of', a, 'is', nx(a, [99], false)['99'], 'and expected to be 0');
@@ -109,10 +112,10 @@ define([
         // bigger
         a = [];
         var n = 1000000;
-        for (var i=0; i < n/2; i++) {
+        for (var i = 0; i < n / 2; i++) {
             a.push(1);
         }
-        for (var i=n/2; i < n; i++) {
+        for (var i = n / 2; i < n; i++) {
             a.push(2);
         }
 
