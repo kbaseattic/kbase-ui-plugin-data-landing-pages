@@ -2,20 +2,12 @@ define([
     'bluebird',
     'numeral',
     'knockout-plus',
-    // 'kb_common/jsonRpc/dynamicServiceClient',
     '../queryService',
     'kb_common/html',
 
     '../components/table',
     'datatables_bootstrap'
-], function (
-    Promise,
-    numeral,
-    ko,
-    //DynamicServiceClient,
-    QueryService,
-    html
-) {
+], function (Promise, numeral, ko, QueryService, html) {
     'use strict';
     var t = html.tag,
         div = t('div');
@@ -27,45 +19,34 @@ define([
             runtime: runtime
         });
 
-        //
         function fetchData(objectRef) {
-            var query = {
+            const contigIdQuery = {
                 assembly: {
                     _args: {
                         ref: objectRef
                     },
-                    contig_lengths: {},
-                    contig_gc_content: {}
+                    contig_ids: {}
                 }
             };
-            return queryService.query(query);
-
-
-            // var AssemblyClient = new DynamicServiceClient({
-            //     url: runtime.config('services.service_wizard.url'),
-            //     token: runtime.service('session').getAuthToken(),
-            //     module: 'AssemblyAPI'
-            // });
-
-            // var dataCalls = [
-            //     AssemblyClient.callFunc('get_contig_lengths', [objectRef, null]).then(function (result) {
-            //         return result[0];
-            //     }),
-            //     AssemblyClient.callFunc('get_contig_gc_content', [objectRef, null]).then(function (result) {
-            //         return result[0];
-            //     })
-            // ];
-            // return Promise.all(dataCalls)
-            //     .spread(function (contigLengths, contigGc) {
-            //         return {
-            //             contigLengths: contigLengths,
-            //             contigGc: contigGc
-            //         };
-            //     });
+            return queryService.query(contigIdQuery).then(data => {
+                const query = {
+                    assembly: {
+                        _args: {
+                            ref: objectRef,
+                            contig_id_list: data.assembly.contig_ids
+                        },
+                        contig_lengths: {},
+                        contig_gc_content: {}
+                    }
+                };
+                return queryService.query(query).then(data => {
+                    return data;
+                });
+            });
         }
 
         function makeContigTable(data) {
-            var rows = Object.keys(data.assembly.contig_lengths).map(function (id, index) {
+            var rows = Object.keys(data.assembly.contig_lengths).map(function (id) {
                 var contigLength = data.assembly.contig_lengths[id];
                 var gc = data.assembly.contig_gc_content[id];
                 // TODO: form the contig length to a number with commas
@@ -87,7 +68,7 @@ define([
                     //     columnStyle: {
                     //         textAlign: 'center'
                     //     }
-                    // }, 
+                    // },
                     {
                         name: 'id',
                         label: 'Id',
@@ -97,7 +78,8 @@ define([
                         style: {
                             fontFamily: 'sans-serif'
                         }
-                    }, {
+                    },
+                    {
                         name: 'contigLength',
                         label: 'Contig Length (bp)',
                         type: 'number',
@@ -112,7 +94,8 @@ define([
                         columnStyle: {
                             textAlign: 'right'
                         }
-                    }, {
+                    },
+                    {
                         name: 'gc',
                         label: 'GC (%)',
                         type: 'number',
@@ -145,9 +128,12 @@ define([
                     }
                 }
             });
-            ko.applyBindings({
-                table: tableData
-            }, node);
+            ko.applyBindings(
+                {
+                    table: tableData
+                },
+                node
+            );
         }
 
         // LIFECYCLE API
@@ -156,13 +142,19 @@ define([
             return Promise.try(function () {
                 container = node;
                 container.innerHTML = div([
-                    div({
-                        dataElement: 'summary'
-                    }, div({
-                        style: {
-                            textAlign: 'center'
-                        }
-                    }, html.loading())),
+                    div(
+                        {
+                            dataElement: 'summary'
+                        },
+                        div(
+                            {
+                                style: {
+                                    textAlign: 'center'
+                                }
+                            },
+                            html.loading()
+                        )
+                    ),
                     div({
                         dataElement: 'contigs'
                     })
@@ -171,11 +163,10 @@ define([
         }
 
         function start(params) {
-            return fetchData(params.objectRef)
-                .then(function (data) {
-                    var table = makeContigTable(data);
-                    renderTable(table);
-                });
+            return fetchData(params.objectRef).then(function (data) {
+                var table = makeContigTable(data);
+                renderTable(table);
+            });
         }
 
         function stop() {
