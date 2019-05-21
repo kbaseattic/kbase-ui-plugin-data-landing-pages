@@ -29,16 +29,40 @@ define([
 
         //
         function fetchData(objectRef) {
-            var query = {
+            const contigIdQuery = {
                 assembly: {
                     _args: {
                         ref: objectRef
                     },
-                    contig_lengths: {},
-                    contig_gc_content: {}
+                    contig_ids: {}
                 }
             };
-            return queryService.query(query);
+            return queryService.query(contigIdQuery)
+                .then(data => {
+                    debugger;
+                    const query = {
+                        assembly: {
+                            _args: {
+                                ref: objectRef,
+                                contig_id_list: data.assembly.contig_ids
+                            },
+                            contig_lengths: {},
+                            contig_gc_content: {}
+                        }
+                    };
+                    return queryService.query(query);
+                });
+
+            // var query = {
+            //     assembly: {
+            //         _args: {
+            //             ref: objectRef
+            //         },
+            //         contig_lengths: {},
+            //         contig_gc_content: {}
+            //     }
+            // };
+            // return queryService.query(query);
 
 
             // var AssemblyClient = new DynamicServiceClient({
@@ -87,7 +111,7 @@ define([
                     //     columnStyle: {
                     //         textAlign: 'center'
                     //     }
-                    // }, 
+                    // },
                     {
                         name: 'id',
                         label: 'Id',
@@ -173,6 +197,7 @@ define([
         function start(params) {
             return fetchData(params.objectRef)
                 .then(function (data) {
+                    debugger;
                     var table = makeContigTable(data);
                     renderTable(table);
                 });
