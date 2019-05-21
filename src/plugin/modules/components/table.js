@@ -1,10 +1,4 @@
-define([
-    'knockout-plus',
-    'kb_common/html'
-], function (
-    ko,
-    html
-) {
+define(['knockout-plus', 'kb_common/html'], function (ko, html) {
     'use strict';
 
     var t = html.tag,
@@ -141,7 +135,7 @@ define([
         });
         sortIt();
 
-        var filteredTable = table.filter(function (row, index) {
+        var filteredTable = table.filter(function (row) {
             var text = searchText();
             if (!text || text.length === 0) {
                 return true;
@@ -175,13 +169,13 @@ define([
             return 'found ' + filteredTable().length + ' of ' + total;
         });
 
-
-        var tableToShow = filteredTable.filter(function (row, index) {
-            if (index() >= pageStart() && index() <= pageEnd()) {
-                return true;
-            }
+        var tableToShow = ko.pureComputed(function () {
+            return filteredTable().filter(function (row, index) {
+                if (index >= pageStart() && index <= pageEnd()) {
+                    return true;
+                }
+            });
         });
-
 
         // filteredNarratives.subscribe(function (newValue) {
         //     last(newValue.length);
@@ -194,7 +188,6 @@ define([
             }
             return 'and ' + left + ' more...';
         });
-
 
         function doPrev() {
             if (pageStart() > 0) {
@@ -256,7 +249,7 @@ define([
             sortBy(null);
             sortDirection(null);
             table.sort(function (a, b) {
-                return (b.naturalOrder - a.naturalOrder);
+                return b.naturalOrder - a.naturalOrder;
             });
         }
 
@@ -299,114 +292,130 @@ define([
     }
 
     function buildHeaderColumn() {
-        return th(span({
-            dataBind: {
-                click: '$component.doSortByColumn',
-                // style: {
-                //     'color': '$component.sortBy() === name ? "green" : "blue"'
-                // }
-                style: '$data.columnStyle'
-            },
-            style: {
-                cursor: 'pointer'
-            }
-        }, [
-            div([
-                span({
+        return th(
+            span(
+                {
                     dataBind: {
-                        text: 'label'
-                    }
-                }),
-                span({
-                    dataBind: {
-                        visible: '$component.sortBy() === name',
-                        css: {
-                            'fa-chevron-down': '$component.sortDirection() === "desc"',
-                            'fa-chevron-up': '$component.sortDirection() === "asc"'
-                        }
+                        click: '$component.doSortByColumn',
+                        // style: {
+                        //     'color': '$component.sortBy() === name ? "green" : "blue"'
+                        // }
+                        style: '$data.columnStyle'
                     },
-                    class: 'fa'
-                })
-            ])
-            // div(
-            //     input({
-            //         dataBind: {
-            //             value: 'search'
-            //         }
-            //     })
-            // )
-        ]));
+                    style: {
+                        cursor: 'pointer'
+                    }
+                },
+                [
+                    div([
+                        span({
+                            dataBind: {
+                                text: 'label'
+                            }
+                        }),
+                        span({
+                            dataBind: {
+                                visible: '$component.sortBy() === name',
+                                css: {
+                                    'fa-chevron-down': '$component.sortDirection() === "desc"',
+                                    'fa-chevron-up': '$component.sortDirection() === "asc"'
+                                }
+                            },
+                            class: 'fa'
+                        })
+                    ])
+                    // div(
+                    //     input({
+                    //         dataBind: {
+                    //             value: 'search'
+                    //         }
+                    //     })
+                    // )
+                ]
+            )
+        );
     }
 
     function buildTable() {
-        // var headerCellStyle = { display: 'table-cell', fontWeight: 'bold', border: '1px silver solid', padding: '4px' };
-        // var cellStyle = { display: 'table-cell', fontWeight: 'normal', border: '1px silver solid', padding: '4px' };
+    // var headerCellStyle = { display: 'table-cell', fontWeight: 'bold', border: '1px silver solid', padding: '4px' };
+    // var cellStyle = { display: 'table-cell', fontWeight: 'normal', border: '1px silver solid', padding: '4px' };
 
-        return table({
-            class: 'table',
-            // style: {
-            //     width: 'auto'
-            // }
-        }, [
-            colgroup({
-
-            }, [
-                col({
-                    style: {
-                        width: '5em'
-                    }
-                }),
-                '<!-- ko foreach: columns -->',
-                col({
-                    dataBind: {
-                        attr: {
-                            width: 'width'
-                        }
-                    }
-                }),
-                '<!-- /ko -->'
-            ]),
-            thead(
-                tr([
-                    th({
+        return table(
+            {
+                class: 'table'
+                // style: {
+                //     width: 'auto'
+                // }
+            },
+            [
+                colgroup({}, [
+                    col({
                         style: {
-                            fontStyle: 'italic',
-                            color: 'gray'
+                            width: '5em'
                         }
-                    }, '#'),
+                    }),
                     '<!-- ko foreach: columns -->',
-                    buildHeaderColumn(),
+                    col({
+                        dataBind: {
+                            attr: {
+                                width: 'width'
+                            }
+                        }
+                    }),
                     '<!-- /ko -->'
-                ])),
-            tbody({
-                style: {
-                    maxHeight: '500px'
-                },
-                dataBind: {
-                    foreach: 'table'
-                }
-            }, tr({
-                // td({ dataBind: { text: '$index() + $component.pageStart() + 1' } }),
-            }, [
-                td({
-                    dataBind: {
-                        text: '$index() + $component.pageStart() + 1'
+                ]),
+                thead(
+                    tr([
+                        th(
+                            {
+                                style: {
+                                    fontStyle: 'italic',
+                                    color: 'gray'
+                                }
+                            },
+                            '#'
+                        ),
+                        '<!-- ko foreach: columns -->',
+                        buildHeaderColumn(),
+                        '<!-- /ko -->'
+                    ])
+                ),
+                tbody(
+                    {
+                        style: {
+                            maxHeight: '500px'
+                        },
+                        dataBind: {
+                            foreach: 'table'
+                        }
                     },
-                    style: {
-                        fontStyle: 'italic',
-                        color: 'gray'
-                    }
-                }),
-                '<!-- ko foreach: $data.row -->',
-                td({
-                    dataBind: {
-                        text: '$data.formatted',
-                        style: '$data.style'
-                    }
-                }),
-                '<!-- /ko -->'
-            ]))
-        ]);
+                    tr(
+                        {
+                            // td({ dataBind: { text: '$index() + $component.pageStart() + 1' } }),
+                        },
+                        [
+                            td({
+                                dataBind: {
+                                    text: '$index() + $component.pageStart() + 1'
+                                },
+                                style: {
+                                    fontStyle: 'italic',
+                                    color: 'gray'
+                                }
+                            }),
+                            '<!-- ko foreach: $data.row -->',
+                            td({
+                                dataBind: {
+                                    text: '$data.formatted',
+                                    style: '$data.style'
+                                }
+                            }),
+                            '<!-- /ko -->'
+                        ]
+                    )
+                )
+            ]
+        );
     }
 
     function icon(type) {
@@ -415,158 +424,183 @@ define([
         });
     }
 
-    function buildButton(iconClass, func, tooltip) {
-        return button({
-            dataBind: {
-                click: func
+    function buildButton(iconClass, func) {
+        return button(
+            {
+                dataBind: {
+                    click: func
+                },
+                class: 'btn btn-default'
             },
-            class: 'btn btn-default'
-        }, icon(iconClass));
+            icon(iconClass)
+        );
     }
 
     function buildControls() {
-        return div({
-            style: {
-                //border: '1px red dashed'
-                margin: '0 0 4px 0'
-            }
-        }, div({ class: 'btn-toolbar' }, [
-            div({
-                class: 'btn-group form-inline',
+        return div(
+            {
                 style: {
-                    width: '350px'
+                    //border: '1px red dashed'
+                    margin: '0 0 4px 0'
                 }
-            }, [
-                buildButton('step-backward', 'doFirst'),
-                buildButton('backward', 'doPrevPage'),
-                buildButton('chevron-left', 'doPrev'),
-                buildButton('chevron-right', 'doNext'),
-                buildButton('forward', 'doNextPage'),
-                buildButton('step-forward', 'doLast'),
-                span({
-                    style: {
-                        // why not work??
-                        display: 'inline-block',
-                        verticalAlign: 'middle',
-                        margin: '6px 0 0 4px'
-                    }
-                }, [
-                    span({
-                        dataBind: {
-                            text: 'pageStart() + 1'
+            },
+            div({ class: 'btn-toolbar' }, [
+                div(
+                    {
+                        class: 'btn-group form-inline',
+                        style: {
+                            width: '350px'
                         }
-                    }),
-                    ' to ',
-                    span({
+                    },
+                    [
+                        buildButton('step-backward', 'doFirst'),
+                        buildButton('backward', 'doPrevPage'),
+                        buildButton('chevron-left', 'doPrev'),
+                        buildButton('chevron-right', 'doNext'),
+                        buildButton('forward', 'doNextPage'),
+                        buildButton('step-forward', 'doLast'),
+                        span(
+                            {
+                                style: {
+                                    // why not work??
+                                    display: 'inline-block',
+                                    verticalAlign: 'middle',
+                                    margin: '6px 0 0 4px'
+                                }
+                            },
+                            [
+                                span({
+                                    dataBind: {
+                                        text: 'pageStart() + 1'
+                                    }
+                                }),
+                                ' to ',
+                                span({
+                                    dataBind: {
+                                        text: 'pageEnd() + 1'
+                                    }
+                                }),
+                                ' of ',
+                                span({
+                                    dataBind: {
+                                        text: 'len()'
+                                    },
+                                    style: {
+                                        marginRight: '10px',
+                                        verticalAlign: 'middle'
+                                    }
+                                })
+                            ]
+                        )
+                    ]
+                ),
+                div({ class: 'btn-group form-inline' }, [
+                    label(
+                        {
+                            style: {
+                                // for bootstrap
+                                marginBottom: '0'
+                            }
+                        },
+                        [
+                            select({
+                                dataBind: {
+                                    value: 'pageSizeInput',
+                                    options: 'pageSizes',
+                                    optionsText: '"label"',
+                                    optionsValue: '"value"'
+                                },
+                                class: 'form-control'
+                            }),
+                            ' rows per page'
+                        ]
+                    )
+                ]),
+                div(
+                    {
+                        class: 'xform-inline',
                         dataBind: {
-                            text: 'pageEnd() + 1'
-                        }
-                    }),
-                    ' of ',
-                    span({
-                        dataBind: {
-                            text: 'len()'
+                            if: 'sortBy()'
                         },
                         style: {
-                            marginRight: '10px',
-                            verticalAlign: 'middle'
+                            display: 'inline-block',
+                            marginLeft: '20px'
                         }
-                    })
-                ])
-            ]),
-            div({ class: 'btn-group form-inline' }, [
-                label({
-                    style: {
-                        // for bootstrap
-                        marginBottom: '0'
-                    }
-                }, [
-                    select({
-                        dataBind: {
-                            value: 'pageSizeInput',
-                            options: 'pageSizes',
-                            optionsText: '"label"',
-                            optionsValue: '"value"'
+                    },
+                    [
+                        button(
+                            {
+                                type: 'button',
+                                class: 'btn btn-danger btn-sm',
+                                dataBind: {
+                                    click: 'doCancelSort'
+                                }
+                            },
+                            icon('times')
+                        ),
+                        span(
+                            {
+                                style: {
+                                    display: 'inline-block',
+                                    verticalAlign: 'middle',
+                                    margin: '6px 0 0 4px'
+                                }
+                            },
+                            [
+                                'sorting by ',
+                                span({
+                                    dataBind: {
+                                        text: 'sortBy'
+                                    },
+                                    style: {
+                                        fontWeight: 'bold'
+                                    }
+                                }),
+                                ' ',
+                                span({
+                                    dataBind: {
+                                        text: 'sortDirection'
+                                    },
+                                    style: {
+                                        fontWeight: 'bold'
+                                    }
+                                })
+                            ]
+                        )
+                    ]
+                ),
+                div({ class: 'btn-group form-inline pull-right' }, [
+                    span(
+                        {
+                            style: {
+                                verticalAlign: 'middle'
+                            }
                         },
-                        class: 'form-control'
-                    }),
-                    ' rows per page'
-                ])
-            ]),
-            div({
-                class: 'xform-inline',
-                dataBind: {
-                    if: 'sortBy()'
-                },
-                style: {
-                    display: 'inline-block',
-                    marginLeft: '20px'
-                }
-            }, [
-                button({
-                    type: 'button',
-                    class: 'btn btn-danger btn-sm',
-                    dataBind: {
-                        click: 'doCancelSort'
-                    }
-                }, icon('times')),
-                span({
-                    style: {
-                        display: 'inline-block',
-                        verticalAlign: 'middle',
-                        margin: '6px 0 0 4px'
-                    }
-                }, [
-
-                    'sorting by ',
-                    span({
-                        dataBind: {
-                            text: 'sortBy'
-                        },
-                        style: {
-                            fontWeight: 'bold'
-                        }
-                    }),
-                    ' ',
-                    span({
-                        dataBind: {
-                            text: 'sortDirection'
-                        },
-                        style: {
-                            fontWeight: 'bold'
-                        }
-                    })
-                ])
-            ]),
-            div({ class: 'btn-group form-inline pull-right' }, [
-                span({
-                    style: {
-                        verticalAlign: 'middle'
-                    }
-                }, [
-                    input({
-                        dataBind: {
-                            textInput: 'search'
-                        },
-                        class: 'form-control',
-                        style: {
-                            verticalAlign: 'middle'
-                        },
-                        placeholder: 'search'
-                    }),
-                    span({
-                        dataBind: {
-                            visible: 'searchSummary && searchSummary().length > 0',
-                            text: 'searchSummary'
-                        },
-                        style: {
-                            marginLeft: '10px'
-                        }
-                    })
+                        [
+                            input({
+                                dataBind: {
+                                    textInput: 'search'
+                                },
+                                class: 'form-control',
+                                style: {
+                                    verticalAlign: 'middle'
+                                },
+                                placeholder: 'search'
+                            }),
+                            span({
+                                dataBind: {
+                                    visible: 'searchSummary && searchSummary().length > 0',
+                                    text: 'searchSummary'
+                                },
+                                style: {
+                                    marginLeft: '10px'
+                                }
+                            })
+                        ]
+                    )
                 ])
             ])
-
-        ]));
+        );
     }
 
     function buildMore() {
@@ -583,16 +617,15 @@ define([
 
     function template() {
         return div([
-            div([
-                buildControls(),
-                buildTable(),
-                buildMore()
-            ]),
-            div({
-                dataBind: {
-                    if: 'len() === 0'
-                }
-            }, 'Sorry, no rows')
+            div([buildControls(), buildTable(), buildMore()]),
+            div(
+                {
+                    dataBind: {
+                        if: 'len() === 0'
+                    }
+                },
+                'Sorry, no rows'
+            )
         ]);
     }
 
